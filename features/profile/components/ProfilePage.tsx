@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { doc, updateDoc } from "firebase/firestore";
-import { User, Building2, BookOpen, CheckCircle, ClipboardList, Mail } from "lucide-react";
+import { User, Building2, BookOpen, CheckCircle, ClipboardList, Mail, Medal } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { db } from "@/src/lib/firebase";
 import MyRequestsSection from "@/features/joinRequests/components/MyRequestsSection";
+import RequestPositionModal from "@/features/positions/components/RequestPositionModal";
+import { useMyPositionRequests } from "@/features/positions/hooks/usePositionRequests";
 
 const ROLE_LABEL: Record<string, string> = {
   student:         "طالب",
@@ -29,12 +31,30 @@ const ROLE_COLOR: Record<string, string> = {
 
 type Tab = "info" | "requests";
 
+const STATUS_LABEL: Record<string, string> = {
+  pending:  "معلّق",
+  approved: "مقبول",
+  rejected: "مرفوض",
+};
+const STATUS_COLOR: Record<string, string> = {
+  pending:  "bg-amber-50 text-amber-600",
+  approved: "bg-emerald-50 text-emerald-600",
+  rejected: "bg-red-50 text-red-500",
+};
+
 export default function ProfilePage() {
   const { user, profile, loading } = useAuth();
   const [tab, setTab] = useState<Tab>("info");
   const [name, setName] = useState(profile?.name ?? "");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [showPositionModal, setShowPositionModal] = useState(false);
+
+  const { requests: posRequests, reload: reloadPositions,
+          pendingVP, pendingPresident } = useMyPositionRequests(user?.uid);
+
+  // Only members (not already VP/president) can request a position
+  const canRequestPosition = profile?.role === "member" && !!profile?.clubId;
 
   async function handleSave() {
     if (!user || !name.trim()) return;
@@ -185,6 +205,46 @@ export default function ProfilePage() {
                     {profile?.email ?? user?.email ?? "—"}
                   </p>
                 </div>
+
+                {/* Position request section — members only */}
+                {canRequestPosition && (
+                  <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Medal size={15} className="text-[#7C3AED]" />
+                        <h3 className="text-sm font-black text-[#21166A]">طلب منصب</h3>
+                      </div>
+                      <button
+                        onClick={() => setShowPositionModal(true)}
+                        className="px-4 py-2 rounded-2xl bg-[#21166A] text-white text-xs font-bold hover:opacity-90 transition"
+                      >
+                        + طلب جديد
+                      </button>
+                    </div>
+
+                    {posRequests.length === 0 ? (
+                      <p className="text-xs text-gray-400 font-bold text-center py-3">
+                        لم ترسل أي طلب منصب حتى الآن
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {posRequests.map((r) => (
+                          <div key={r.id} className="flex items-center justify-between bg-[#F7F5FF] rounded-2xl px-4 py-3">
+                            <div>
+                              <p className="text-xs font-black text-[#21166A]">
+                                {r.position === "vicePresident" ? "نائب الرئيس" : "رئيس النادي"}
+                              </p>
+                              <p className="text-[11px] text-gray-400 mt-0.5">{r.clubName}</p>
+                            </div>
+                            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[r.status]}`}>
+                              {STATUS_LABEL[r.status]}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -202,6 +262,20 @@ export default function ProfilePage() {
       </div>
 
       <Sidebar />
+
+      {showPositionModal && user && profile?.clubId && (
+        <RequestPositionModal
+          userId={user.uid}
+          userName={profile.name ?? ""}
+          clubId={profile.clubId}
+          clubName={profile.clubName ?? ""}
+          universityId={profile.universityId ?? ""}
+          hasPendingVP={!!pendingVP}
+          hasPendingPresident={!!pendingPresident}
+          onClose={() => setShowPositionModal(false)}
+          onSubmitted={reloadPositions}
+        />
+      )}
     </div>
   );
 }

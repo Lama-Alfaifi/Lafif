@@ -10,14 +10,21 @@ import CreateEventModal     from "./CreateEventModal";
 import ClubEventsTable      from "./ClubEventsTable";
 import EventAttendanceCard  from "./EventAttendanceCard";
 import usePresidentClub     from "../hooks/usePresidentClub";
+import { useAuth }          from "@/features/auth/context/AuthContext";
 import WeeklyChallengeCard  from "@/features/ai/components/WeeklyChallengeCard";
+import PositionRequestCard  from "@/features/positions/components/PositionRequestCard";
+import { usePendingVPRequests } from "@/features/positions/hooks/usePositionRequests";
+import { UserCheck } from "lucide-react";
 
 export default function PresidentDashboard() {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string>();
   const [eventsRefreshKey, setEventsRefreshKey] = useState(0);
 
+  const { user } = useAuth();
   const { data, loading } = usePresidentClub();
+  const { requests: vpRequests, reload: reloadVP } =
+    usePendingVPRequests(data?.clubId ?? undefined);
 
   if (loading) {
     return (
@@ -90,6 +97,29 @@ export default function PresidentDashboard() {
                   canManage={isPresident}
                 />
               </div>
+
+              {/* VP Position Requests */}
+              {isPresident && vpRequests.length > 0 && (
+                <div className="bg-white rounded-[24px] p-6 shadow-md border border-gray-50" dir="rtl">
+                  <div className="flex items-center gap-2 mb-5">
+                    <UserCheck size={16} className="text-[#7C3AED]" />
+                    <h2 className="text-lg font-black text-[#21166A]">طلبات منصب نائب الرئيس</h2>
+                    <span className="mr-auto inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#EFE8F7] text-[#7C3AED] text-xs font-black">
+                      {vpRequests.length}
+                    </span>
+                  </div>
+                  <div className="space-y-3">
+                    {vpRequests.map((req) => (
+                      <PositionRequestCard
+                        key={req.id}
+                        request={req}
+                        reviewerUserId={user?.uid ?? ""}
+                        onReviewed={reloadVP}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Events table */}
               <ClubEventsTable

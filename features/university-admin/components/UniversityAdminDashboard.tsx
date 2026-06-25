@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Building2, BookOpen, LayoutGrid, TrendingUp } from "lucide-react";
+import { Plus, Building2, BookOpen, LayoutGrid, TrendingUp, Crown } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import CreateClubModal from "./CreateClubModal";
 import UniversityClubsTable from "./UniversityClubsTable";
 import useUniversityClubs from "../hooks/useUniversityClubs";
+import PositionRequestCard from "@/features/positions/components/PositionRequestCard";
+import { usePendingPresidentRequests } from "@/features/positions/hooks/usePositionRequests";
 
 function StatCard({
   icon,
@@ -42,6 +44,9 @@ export default function UniversityAdminDashboard() {
     loading: clubsLoading,
     loadClubs,
   } = useUniversityClubs(profile?.universityId);
+
+  const { requests: presidentRequests, reload: reloadPresidentReqs } =
+    usePendingPresidentRequests(profile?.universityId);
 
   if (loading) {
     return (
@@ -142,6 +147,29 @@ export default function UniversityAdminDashboard() {
 
             <UniversityClubsTable clubs={clubs} loading={clubsLoading} />
           </div>
+
+          {/* President position requests */}
+          {presidentRequests.length > 0 && (
+            <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50 flex items-center gap-3">
+                <Crown size={15} className="text-amber-500" />
+                <h2 className="text-base font-black text-[#21166A]">طلبات الرئاسة</h2>
+                <span className="mr-auto inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-50 text-amber-600 text-xs font-black">
+                  {presidentRequests.length}
+                </span>
+              </div>
+              <div className="p-5 grid grid-cols-1 xl:grid-cols-2 gap-4">
+                {presidentRequests.map((req) => (
+                  <PositionRequestCard
+                    key={req.id}
+                    request={req}
+                    reviewerUserId={user?.uid ?? ""}
+                    onReviewed={reloadPresidentReqs}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
