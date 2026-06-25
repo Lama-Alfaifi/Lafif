@@ -16,11 +16,13 @@ from "../hooks/usePresidentStats";
 
 export default function PresidentStats({
   clubId,
+  universityId,
 }: {
   clubId: string;
+  universityId: string;
 }) {
   const { stats, loading } =
-    usePresidentStats(clubId);
+    usePresidentStats(clubId, universityId);
 
   if (loading) {
     return (

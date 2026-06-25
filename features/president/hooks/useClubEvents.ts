@@ -1,51 +1,32 @@
 "use client";
 
-import { useEffect, useState }
-from "react";
-
-import {
-  getClubEvents,
-} from "../services/clubEvents.service";
+import { useEffect, useState, useCallback } from "react";
+import { getClubEvents } from "../services/clubEvents.service";
 
 export default function useClubEvents(
-  clubId: string
+  clubId: string,
+  universityId: string,
+  refreshKey?: number
 ) {
+  const [events, setEvents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const [events, setEvents] =
-    useState<any[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
+  const loadEvents = useCallback(async () => {
+    if (!clubId || !universityId) return;
+    setLoading(true);
+    try {
+      const data = await getClubEvents(clubId, universityId);
+      setEvents(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  }, [clubId, universityId]);
 
   useEffect(() => {
-
-    async function loadEvents() {
-
-      try {
-
-        const data =
-          await getClubEvents(clubId);
-
-        setEvents(data);
-
-      } catch (error) {
-
-        console.error(error);
-
-      } finally {
-
-        setLoading(false);
-
-      }
-
-    }
-
     loadEvents();
+  }, [loadEvents, refreshKey]);
 
-  }, []);
-
-  return {
-    events,
-    loading,
-  };
+  return { events, loading, reloadEvents: loadEvents };
 }

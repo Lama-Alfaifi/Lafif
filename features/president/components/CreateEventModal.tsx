@@ -1,436 +1,184 @@
 "use client";
 
 import { useState } from "react";
-
-import { X } from "lucide-react";
-
+import { X, CalendarDays, CheckCircle } from "lucide-react";
 import { createEvent } from "../services/createEvent.service";
 
-type CreateEventModalProps = {
+type Props = {
   onClose: () => void;
-
+  onCreated?: () => void;
   clubId: string;
   clubName: string;
-
   universityId: string;
   universityName: string;
 };
 
+const INPUT_CLS =
+  "w-full rounded-2xl border border-[#EEE7F8] bg-[#F8F6FC] px-4 py-3 outline-none text-sm text-[#21166A] focus:border-[#7C3AED] transition placeholder:text-gray-400";
+
 export default function CreateEventModal({
   onClose,
-
+  onCreated,
   clubId,
   clubName,
-
   universityId,
   universityName,
-}: CreateEventModalProps) {
-
-  const [title, setTitle] =
-    useState("");
-
-  const [description, setDescription] =
-    useState("");
-
-  const [place, setPlace] =
-    useState("");
-
-  const [time, setTime] =
-    useState("");
-
-  const [type, setType] =
-    useState<"public" | "members">(
-      "public"
-    );
-
-  const [day, setDay] =
-    useState("");
-
-  const [month, setMonth] =
-    useState("");
-
-  const [year, setYear] =
-    useState("");
-
-  const [message, setMessage] =
-    useState("");
-
-  const [loading, setLoading] =
-    useState(false);
+}: Props) {
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [place, setPlace] = useState("");
+  const [date, setDate] = useState("");   // "YYYY-MM-DD"
+  const [time, setTime] = useState("");   // "HH:MM"
+  const [type, setType] = useState<"public" | "members">("public");
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleCreate() {
+    setError("");
 
-    setMessage("");
-
-    if (
-      !title ||
-      !place ||
-      !time ||
-      !day ||
-      !month ||
-      !year
-    ) {
-
-      setMessage(
-        "رجاءً عبئي الحقول الأساسية."
-      );
-
+    if (!title.trim() || !place.trim() || !date || !time) {
+      setError("يرجى تعبئة جميع الحقول المطلوبة.");
       return;
     }
 
+    const [yearStr, monthStr, dayStr] = date.split("-");
+
     try {
-
       setLoading(true);
-
       await createEvent({
-
-        title,
-        description,
-        place,
+        title: title.trim(),
+        description: description.trim(),
+        place: place.trim(),
         time,
         type,
-
-        day: Number(day),
-        month: Number(month),
-        year: Number(year),
-
+        day: Number(dayStr),
+        month: Number(monthStr),
+        year: Number(yearStr),
         clubId,
         clubName,
-
         universityId,
         universityName,
-
       });
 
-      setMessage(
-        "تم إنشاء الفعالية بنجاح."
-      );
+      setSuccess(true);
+      onCreated?.();
 
-      setTitle("");
-      setDescription("");
-      setPlace("");
-      setTime("");
-
-      setDay("");
-      setMonth("");
-      setYear("");
-
-      setTimeout(() => {
-
-        onClose();
-
-      }, 800);
-
-    } catch (error: any) {
-
-      setMessage(
-        error.message ||
-        "حدث خطأ أثناء إنشاء الفعالية."
-      );
-
+      setTimeout(onClose, 900);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "حدث خطأ أثناء إنشاء الفعالية.");
     } finally {
-
       setLoading(false);
-
     }
-
   }
 
   return (
-    <div
-      className="
-        fixed
-        inset-0
-        z-[100]
-        bg-black/30
-        backdrop-blur-sm
-        flex
-        items-center
-        justify-center
-        p-5
-      "
-    >
-
+    <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-center justify-center p-5">
       <div
-        className="
-          w-full
-          max-w-3xl
-          rounded-[32px]
-          bg-white
-          shadow-2xl
-          border
-          border-white/80
-          p-6
-          relative
-        "
+        className="w-full max-w-lg rounded-[32px] bg-white shadow-2xl border border-white/80 p-7 relative"
         dir="rtl"
       >
-
+        {/* Close */}
         <button
           onClick={onClose}
-          className="
-            absolute
-            top-5
-            left-5
-            w-10
-            h-10
-            rounded-2xl
-            bg-[#F3F0FA]
-            text-[#21166A]
-            flex
-            items-center
-            justify-center
-            hover:bg-[#E9E1F8]
-            transition
-          "
+          className="absolute top-5 left-5 w-9 h-9 rounded-2xl bg-[#F3F0FA] text-[#21166A] flex items-center justify-center hover:bg-[#E9E1F8] transition"
         >
-
-          <X size={18} />
-
+          <X size={16} />
         </button>
 
-        <div className="mb-6 text-right">
-
-          <h2
-            className="
-              text-2xl
-              font-black
-              text-[#21166A]
-            "
-          >
-            إنشاء فعالية جديدة
-          </h2>
-
-          <p className="text-sm text-gray-500 mt-1">
-            أضيفي ورشة أو فعالية تظهر مباشرة في تقويم الفعاليات.
-          </p>
-
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#7C3AED] to-[#21166A] flex items-center justify-center">
+            <CalendarDays size={18} className="text-white" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-[#21166A]">فعالية جديدة</h2>
+            <p className="text-xs text-gray-400 mt-0.5">ستظهر فورًا في تقويم الفعاليات</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
+        <div className="space-y-3">
           <input
-            placeholder="عنوان الفعالية"
+            placeholder="عنوان الفعالية *"
             value={title}
-            onChange={(e) =>
-              setTitle(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
+            onChange={(e) => setTitle(e.target.value)}
+            className={INPUT_CLS}
           />
 
           <input
-            placeholder="المكان"
+            placeholder="المكان *"
             value={place}
-            onChange={(e) =>
-              setPlace(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
+            onChange={(e) => setPlace(e.target.value)}
+            className={INPUT_CLS}
           />
 
-          <input
-            placeholder="الوقت مثال: 8:00 PM"
-            value={time}
-            onChange={(e) =>
-              setTime(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-bold text-gray-400 mb-1 block">التاريخ *</label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={INPUT_CLS}
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-bold text-gray-400 mb-1 block">الوقت *</label>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className={INPUT_CLS}
+              />
+            </div>
+          </div>
 
           <select
             value={type}
-            onChange={(e) =>
-              setType(
-                e.target.value as
-                | "public"
-                | "members"
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
+            onChange={(e) => setType(e.target.value as "public" | "members")}
+            className={INPUT_CLS}
           >
-
-            <option value="public">
-              فعالية عامة
-            </option>
-
-            <option value="members">
-              للأعضاء فقط
-            </option>
-
+            <option value="public">فعالية عامة</option>
+            <option value="members">للأعضاء فقط</option>
           </select>
 
-          <input
-            placeholder="اليوم"
-            type="number"
-            value={day}
-            onChange={(e) =>
-              setDay(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
+          <textarea
+            placeholder="وصف الفعالية (اختياري)"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            rows={3}
+            className={`${INPUT_CLS} resize-none`}
           />
-
-          <input
-            placeholder="الشهر"
-            type="number"
-            value={month}
-            onChange={(e) =>
-              setMonth(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-            "
-          />
-
-          <input
-            placeholder="السنة"
-            type="number"
-            value={year}
-            onChange={(e) =>
-              setYear(
-                e.target.value
-              )
-            }
-            className="
-              rounded-2xl
-              border
-              border-[#EEE7F8]
-              bg-[#F8F6FC]
-              p-3
-              outline-none
-              text-sm
-              focus:border-[#7C3AED]
-              md:col-span-2
-            "
-          />
-
         </div>
 
-        <textarea
-          placeholder="وصف الفعالية"
-          value={description}
-          onChange={(e) =>
-            setDescription(
-              e.target.value
-            )
-          }
-          className="
-            mt-4
-            w-full
-            min-h-[120px]
-            rounded-2xl
-            border
-            border-[#EEE7F8]
-            bg-[#F8F6FC]
-            p-4
-            outline-none
-            text-sm
-            focus:border-[#7C3AED]
-          "
-        />
+        {error && (
+          <p className="mt-3 text-xs font-bold text-red-500">{error}</p>
+        )}
 
         <button
           onClick={handleCreate}
-          disabled={loading}
-          className="
-            mt-5
-            w-full
-            rounded-2xl
-            bg-[#21166A]
-            text-white
-            py-3
-            font-bold
-            text-sm
-            hover:opacity-90
-            transition
-            disabled:opacity-60
-          "
+          disabled={loading || success}
+          className={`
+            mt-5 w-full rounded-2xl py-3 font-bold text-sm transition flex items-center justify-center gap-2
+            ${success
+              ? "bg-emerald-100 text-emerald-700"
+              : "bg-[#21166A] text-white hover:opacity-90 disabled:opacity-60"
+            }
+          `}
         >
-
-          {loading
-            ? "جارٍ إنشاء الفعالية..."
-            : "إنشاء الفعالية"}
-
+          {success ? (
+            <>
+              <CheckCircle size={16} />
+              تم إنشاء الفعالية!
+            </>
+          ) : loading ? (
+            "جارٍ الإنشاء..."
+          ) : (
+            "إنشاء الفعالية"
+          )}
         </button>
-
-        {message && (
-
-          <p
-            className="
-              mt-4
-              text-sm
-              font-bold
-              text-center
-              text-[#21166A]
-            "
-          >
-            {message}
-          </p>
-
-        )}
-
       </div>
-
     </div>
   );
 }

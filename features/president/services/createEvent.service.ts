@@ -1,6 +1,8 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
+  doc,
   serverTimestamp,
 } from "firebase/firestore";
 
@@ -27,4 +29,8 @@ export async function createEvent(data: CreateEventData) {
     ...data,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function deleteEvent(eventId: string) {
+  await deleteDoc(doc(db, "events", eventId));
 }

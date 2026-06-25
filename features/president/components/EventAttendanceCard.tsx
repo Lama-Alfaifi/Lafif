@@ -4,13 +4,15 @@ import useEventAttendance from "../hooks/useEventAttendance";
 
 type EventAttendanceCardProps = {
   eventId?: string;
+  universityId?: string;
 };
 
 export default function EventAttendanceCard({
   eventId,
+  universityId,
 }: EventAttendanceCardProps) {
   const { attendance, loading } =
-    useEventAttendance(eventId);
+    useEventAttendance(eventId, universityId);
 
   return (
     <div className="bg-white rounded-[30px] p-5 shadow-lg mt-6">
