@@ -12,6 +12,7 @@ import { auth, db } from "@/src/lib/firebase";
 export async function registerAttendance(
   eventId: string,
   eventTitle: string,
+  universityId: string,
   clubId?: string,
   clubName?: string
 ) {
@@ -27,23 +28,20 @@ export async function registerAttendance(
     where("userId", "==", user.uid)
   );
 
-  const existingSnapshot =
-    await getDocs(existingQuery);
+  const existingSnapshot = await getDocs(existingQuery);
 
   if (!existingSnapshot.empty) {
     throw new Error("تم تسجيل حضورك مسبقًا.");
   }
 
-  await addDoc(
-    collection(db, "eventRegistrations"),
-    {
-      eventId,
-      eventTitle,
-      clubId: clubId || "",
-      clubName: clubName || "",
-      userId: user.uid,
-      userEmail: user.email,
-      createdAt: serverTimestamp(),
-    }
-  );
+  await addDoc(collection(db, "eventRegistrations"), {
+    eventId,
+    eventTitle,
+    universityId,
+    clubId: clubId || "",
+    clubName: clubName || "",
+    userId: user.uid,
+    userEmail: user.email,
+    createdAt: serverTimestamp(),
+  });
 }

@@ -1,4 +1,4 @@
-import type { EventItem } from "../types";
+import type { EventItem } from "../types/event.types";
 
 type PublicClubsCardProps = {
   events: EventItem[];

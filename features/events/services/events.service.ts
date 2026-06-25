@@ -9,19 +9,6 @@ import { db } from "@/src/lib/firebase";
 
 import type { EventItem } from "../types/event.types";
 
-export async function getEvents() {
-  const snapshot = await getDocs(
-    collection(db, "events")
-  );
-
-  const events = snapshot.docs.map((doc) => ({
-    id: doc.id,
-    ...doc.data(),
-  })) as EventItem[];
-
-  return events;
-}
-
 export async function getEventsByUniversity(
   universityId: string
 ) {

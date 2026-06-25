@@ -1,52 +1,42 @@
 import {
   collection,
   getDocs,
+  query,
+  where,
 } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase";
 
-export async function getEventsStats() {
+export async function getEventsStats(universityId: string) {
+  const registrationsQuery = query(
+    collection(db, "eventRegistrations"),
+    where("universityId", "==", universityId)
+  );
 
-  const registrationsSnapshot =
-    await getDocs(
-      collection(db, "eventRegistrations")
-    );
+  const ratingsQuery = query(
+    collection(db, "eventRatings"),
+    where("universityId", "==", universityId)
+  );
 
-  const ratingsSnapshot =
-    await getDocs(
-      collection(db, "eventRatings")
-    );
+  const [registrationsSnapshot, ratingsSnapshot] = await Promise.all([
+    getDocs(registrationsQuery),
+    getDocs(ratingsQuery),
+  ]);
 
-  const registrations =
-    registrationsSnapshot.docs.map(
-      (doc) => doc.data()
-    );
+  const ratings = ratingsSnapshot.docs.map((doc) => doc.data());
 
-  const ratings =
-    ratingsSnapshot.docs.map(
-      (doc) => doc.data()
-    );
-
-  const totalAttendance =
-    registrations.length;
-
-  const totalRatings =
-    ratings.length;
+  const totalAttendance = registrationsSnapshot.size;
+  const totalRatings = ratings.length;
 
   const averageRating =
     totalRatings > 0
       ? (
           ratings.reduce(
-            (sum: number, item: any) =>
-              sum + item.rating,
+            (sum: number, item: any) => sum + item.rating,
             0
           ) / totalRatings
         ).toFixed(1)
       : "0.0";
 
-  return {
-    totalAttendance,
-    totalRatings,
-    averageRating,
-  };
+  return { totalAttendance, totalRatings, averageRating };
 }

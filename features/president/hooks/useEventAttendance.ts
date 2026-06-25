@@ -7,29 +7,25 @@ import { getEventAttendance } from "../services/attendance.service";
 import type { EventAttendance } from "../types/attendance.types";
 
 export default function useEventAttendance(
-  eventId?: string
+  eventId?: string,
+  universityId?: string
 ) {
-  const [attendance, setAttendance] =
-    useState<EventAttendance[]>([]);
-
-  const [loading, setLoading] =
-    useState(false);
+  const [attendance, setAttendance] = useState<EventAttendance[]>([]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function loadAttendance() {
-      if (!eventId) {
+      if (!eventId || !universityId) {
         setAttendance([]);
         return;
       }
 
       try {
         setLoading(true);
-
-        const data =
-          (await getEventAttendance(
-            eventId
-          )) as EventAttendance[];
-
+        const data = (await getEventAttendance(
+          eventId,
+          universityId
+        )) as EventAttendance[];
         setAttendance(data);
       } catch (error) {
         console.error(error);
@@ -39,10 +35,7 @@ export default function useEventAttendance(
     }
 
     loadAttendance();
-  }, [eventId]);
+  }, [eventId, universityId]);
 
-  return {
-    attendance,
-    loading,
-  };
+  return { attendance, loading };
 }

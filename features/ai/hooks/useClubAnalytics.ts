@@ -1,119 +1,45 @@
 "use client";
 
-import {
+import { useEffect, useState } from "react";
 
-  useEffect,
-  useState,
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { getClubById } from "@/features/clubs/services/clubs.service";
 
-}
-from "react";
+export default function useClubAnalytics() {
+  const { profile, loading: authLoading } = useAuth();
 
-import {
-
-  doc,
-  getDoc,
-
-}
-from "firebase/firestore";
-
-import { db }
-from "@/src/lib/firebase";
-
-export default function
-useClubAnalytics() {
-
-  const [
-
-    analytics,
-
-    setAnalytics,
-
-  ] = useState<any>(null);
-
-  const [
-
-    loading,
-
-    setLoading,
-
-  ] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading || !profile?.clubId) {
+      setLoading(false);
+      return;
+    }
 
-    async function
-    fetchAnalytics() {
-
+    async function fetchAnalytics() {
       try {
-
-        const ref =
-          doc(
-
-            db,
-
-            "clubs",
-
-            "cyber_club"
-
-          );
-
-        const snapshot =
-          await getDoc(ref);
-
-        const data =
-          snapshot.data();
+        const club = await getClubById(profile!.clubId!);
 
         setAnalytics({
-
-          score:
-          data?.score || 0,
-
-          attendance:
-          data?.attendance || 0,
-
-          engagement:
-          data?.engagement || 0,
-
-          challengeCompletion:
-          data?.challengeCompletion || 0,
-
+          score: club?.score || 0,
+          attendance: club?.attendance || 0,
+          engagement: club?.engagement || 0,
+          challengeCompletion: club?.challengeCompletion || 0,
           insight: {
-
-            status:
-            "النادي يحقق أداء ممتاز",
-
-            recommendation:
-            "ننصح بإضافة تحديات وورش جديدة",
-
+            status: "النادي يحقق أداء ممتاز",
+            recommendation: "ننصح بإضافة تحديات وورش جديدة",
           },
-
         });
-
-      }
-
-      catch (error) {
-
-        console.log(error);
-
-      }
-
-      finally {
-
+      } catch (error) {
+        console.error(error);
+      } finally {
         setLoading(false);
-
       }
-
     }
 
     fetchAnalytics();
+  }, [profile?.clubId, authLoading]);
 
-  }, []);
-
-  return {
-
-    analytics,
-
-    loading,
-
-  };
-
+  return { analytics, loading };
 }

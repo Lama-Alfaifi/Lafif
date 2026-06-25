@@ -1,102 +1,41 @@
 "use client";
 
-import {
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
-  useEffect,
-  useState,
+import { db } from "@/src/lib/firebase";
+import { useAuth } from "@/features/auth/context/AuthContext";
 
-}
-from "react";
+export default function useChallenges() {
+  const { profile, loading: authLoading } = useAuth();
 
-import {
-
-  collection,
-  getDocs,
-
-}
-from "firebase/firestore";
-
-import { db }
-from "@/src/lib/firebase";
-
-export default function
-useChallenges() {
-
-  const [
-
-    challenges,
-
-    setChallenges,
-
-  ] = useState<any[]>([]);
-
-  const [
-
-    loading,
-
-    setLoading,
-
-  ] = useState(true);
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (authLoading || !profile?.universityId) return;
 
-    async function
-    fetchChallenges() {
-
+    async function fetchChallenges() {
       try {
+        const q = query(
+          collection(db, "challenges"),
+          where("universityId", "==", profile!.universityId)
+        );
 
-        const snapshot =
-          await getDocs(
+        const snapshot = await getDocs(q);
 
-            collection(
-              db,
-              "challenges"
-            )
-
-          );
-
-        const data =
-          snapshot.docs.map(
-
-            (doc) => ({
-
-              id:
-              doc.id,
-
-              ...doc.data(),
-
-            })
-
-          );
-
-        setChallenges(data);
-
-      }
-
-      catch (error) {
-
-        console.log(error);
-
-      }
-
-      finally {
-
+        setChallenges(
+          snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
+        );
+      } catch (error) {
+        console.error(error);
+      } finally {
         setLoading(false);
-
       }
-
     }
 
     fetchChallenges();
+  }, [profile?.universityId, authLoading]);
 
-  }, []);
-
-  return {
-
-    challenges,
-
-    loading,
-
-  };
-
+  return { challenges, loading };
 }

@@ -2,51 +2,38 @@
 
 import { useEffect, useState } from "react";
 
-import { getEventsStats }
-from "../services/stats.service";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import { getEventsStats } from "../services/stats.service";
 
 export default function useEventStats() {
+  const { profile, loading: authLoading } = useAuth();
 
-  const [stats, setStats] =
-    useState({
-      totalAttendance: 0,
-      totalRatings: 0,
-      averageRating: "0.0",
-    });
+  const [stats, setStats] = useState({
+    totalAttendance: 0,
+    totalRatings: 0,
+    averageRating: "0.0",
+  });
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
   async function refreshStats() {
+    if (!profile?.universityId) return;
 
     try {
-
-      const data =
-        await getEventsStats();
-
+      const data = await getEventsStats(profile.universityId);
       setStats(data);
-
     } catch (error) {
-
       console.error(error);
-
     } finally {
-
       setLoading(false);
-
     }
-
   }
 
   useEffect(() => {
+    if (!authLoading && profile?.universityId) {
+      refreshStats();
+    }
+  }, [profile?.universityId, authLoading]);
 
-    refreshStats();
-
-  }, []);
-
-  return {
-    stats,
-    loading,
-    refreshStats,
-  };
+  return { stats, loading, refreshStats };
 }

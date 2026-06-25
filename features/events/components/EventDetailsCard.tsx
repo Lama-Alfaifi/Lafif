@@ -3,6 +3,7 @@
 import { useState } from "react";
 
 import useAttendance from "../hooks/useAttendance";
+import { useAuth } from "@/features/auth/context/AuthContext";
 
 import {
   CalendarDays,
@@ -32,6 +33,8 @@ export default function EventDetailsCard({
   const [rating, setRating] = useState(0);
   const [message, setMessage] = useState("");
 
+  const { profile } = useAuth();
+
   const {
     hasAttended,
     setHasAttended,
@@ -51,6 +54,7 @@ export default function EventDetailsCard({
     await registerAttendance(
       selectedEvent.id,
       selectedEvent.title,
+      profile?.universityId || "",
       selectedEvent.clubId || "",
       selectedEvent.clubName || ""
     );
@@ -80,6 +84,7 @@ async function handleRating(value: number) {
     await submitEventRating(
       selectedEvent.id,
       selectedEvent.title,
+      profile?.universityId || "",
       selectedEvent.clubId || "",
       selectedEvent.clubName || "",
       value
@@ -144,18 +149,16 @@ async function handleRating(value: number) {
 
         <button
           onClick={handleRegister}
-          className="
-            mt-6
-            w-full
-            rounded-2xl
-            bg-[#21166A]
-            text-white
-            py-3
-            font-bold
-            text-sm
-          "
+          disabled={hasAttended}
+          className={`
+            mt-6 w-full rounded-2xl py-3 font-bold text-sm transition
+            ${hasAttended
+              ? "bg-emerald-100 text-emerald-700 cursor-default"
+              : "bg-[#21166A] text-white hover:opacity-90"
+            }
+          `}
         >
-          تسجيل حضور
+          {hasAttended ? "✓ تم تسجيل حضورك" : "تسجيل حضور"}
         </button>
 
         <div className="mt-5">

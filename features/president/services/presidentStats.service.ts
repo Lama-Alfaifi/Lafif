@@ -8,28 +8,32 @@ import {
 import { db } from "@/src/lib/firebase";
 
 export async function getPresidentStats(
-  clubId: string
+  clubId: string,
+  universityId: string
 ) {
-
   const approvedMembersQuery = query(
     collection(db, "joinRequests"),
     where("clubId", "==", clubId),
+    where("universityId", "==", universityId),
     where("status", "==", "approved")
   );
 
   const eventsQuery = query(
     collection(db, "events"),
-    where("clubId", "==", clubId)
+    where("clubId", "==", clubId),
+    where("universityId", "==", universityId)
   );
 
   const attendanceQuery = query(
     collection(db, "eventRegistrations"),
-    where("clubId", "==", clubId)
+    where("clubId", "==", clubId),
+    where("universityId", "==", universityId)
   );
 
   const ratingsQuery = query(
     collection(db, "eventRatings"),
-    where("clubId", "==", clubId)
+    where("clubId", "==", clubId),
+    where("universityId", "==", universityId)
   );
 
   const [
@@ -44,32 +48,22 @@ export async function getPresidentStats(
     getDocs(ratingsQuery),
   ]);
 
-  const ratings =
-    ratingsSnapshot.docs.map(
-      (doc) => doc.data()
-    );
+  const ratings = ratingsSnapshot.docs.map((doc) => doc.data());
 
   const averageRating =
     ratings.length > 0
       ? (
           ratings.reduce(
-            (sum: number, item: any) =>
-              sum + item.rating,
+            (sum: number, item: any) => sum + item.rating,
             0
           ) / ratings.length
         ).toFixed(1)
       : "0.0";
 
   return {
-    totalMembers:
-      membersSnapshot.size,
-
-    totalEvents:
-      eventsSnapshot.size,
-
-    totalAttendance:
-      attendanceSnapshot.size,
-
+    totalMembers: membersSnapshot.size,
+    totalEvents: eventsSnapshot.size,
+    totalAttendance: attendanceSnapshot.size,
     averageRating,
   };
 }

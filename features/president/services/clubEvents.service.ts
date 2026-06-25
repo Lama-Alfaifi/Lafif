@@ -8,16 +8,16 @@ import {
 import { db } from "@/src/lib/firebase";
 
 export async function getClubEvents(
-  clubId: string
+  clubId: string,
+  universityId: string
 ) {
-
   const q = query(
     collection(db, "events"),
-    where("clubId", "==", clubId)
+    where("clubId", "==", clubId),
+    where("universityId", "==", universityId)
   );
 
-  const snapshot =
-    await getDocs(q);
+  const snapshot = await getDocs(q);
 
   return snapshot.docs.map((doc) => ({
     id: doc.id,

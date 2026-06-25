@@ -15,6 +15,7 @@ function difficultyColor(d: string) {
 
 type WeeklyChallengeCardProps = {
   clubId: string;
+  universityId: string;
   clubName: string;
   category: string;
   onStart?: (challenge: ChallengeType) => void;
@@ -22,11 +23,12 @@ type WeeklyChallengeCardProps = {
 
 export default function WeeklyChallengeCard({
   clubId,
+  universityId,
   clubName,
   category,
   onStart,
 }: WeeklyChallengeCardProps) {
-  const { challenge, loading, error, saved } = useAI({ clubId, clubName, category });
+  const { challenge, loading, error, saved } = useAI({ clubId, universityId, clubName, category });
 
   const subtitle = useMemo(
     () => (category ? `تحدي هذا الأسبوع — ${category}` : "AI Weekly Challenge"),

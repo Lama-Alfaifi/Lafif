@@ -1,91 +1,40 @@
 "use client";
 
-import {
+import { useEffect, useState } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
 
-  useEffect,
-  useState,
+import { db } from "@/src/lib/firebase";
+import { useAuth } from "@/features/auth/context/AuthContext";
 
-}
-from "react";
+export default function useLeaderboard() {
+  const { profile, loading: authLoading } = useAuth();
 
-import {
-
-  collection,
-  getDocs,
-
-}
-from "firebase/firestore";
-
-import { db }
-from "@/src/lib/firebase";
-
-export default function
-useLeaderboard() {
-
-  const [
-
-    clubs,
-
-    setClubs,
-
-  ] = useState<any[]>([]);
+  const [clubs, setClubs] = useState<any[]>([]);
 
   useEffect(() => {
+    if (authLoading || !profile?.universityId) return;
 
-    async function
-   fetchLeaderboard() {
-
+    async function fetchLeaderboard() {
       try {
+        const q = query(
+          collection(db, "clubs"),
+          where("universityId", "==", profile!.universityId)
+        );
 
-        const snapshot =
-          await getDocs(
+        const snapshot = await getDocs(q);
 
-            collection(
-              db,
-              "clubs"
-            )
-
-          );
-
-        const data =
-          snapshot.docs.map(
-
-            (doc) => ({
-
-              id:
-              doc.id,
-
-              ...doc.data(),
-
-            })
-
-          );
-
-        const sorted =
-          data.sort(
-
-            (a: any, b: any) =>
-
-              b.score - a.score
-
-          );
+        const sorted = snapshot.docs
+          .map((doc) => ({ id: doc.id, ...doc.data() }))
+          .sort((a: any, b: any) => b.score - a.score);
 
         setClubs(sorted);
-
+      } catch (error) {
+        console.error(error);
       }
-
-      catch (error) {
-
-        console.log(error);
-
-      }
-
     }
 
     fetchLeaderboard();
-
-  }, []);
+  }, [profile?.universityId, authLoading]);
 
   return clubs;
-
 }

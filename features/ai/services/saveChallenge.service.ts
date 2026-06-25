@@ -19,6 +19,7 @@ function getWeekKey(d = new Date()): string {
 
 type SaveOpts = {
   clubId: string;
+  universityId: string;
   challenge: ChallengeType;
   weekKey?: string;
   overwrite?: boolean;
@@ -26,6 +27,7 @@ type SaveOpts = {
 
 export type SavedChallenge = ChallengeType & {
   clubId: string;
+  universityId: string;
   weekKey: string;
   createdAt?: unknown;
   id: string;
@@ -37,7 +39,7 @@ export type SavedChallenge = ChallengeType & {
 };
 
 export default async function saveChallengeService(opts: SaveOpts): Promise<SavedChallenge> {
-  const { clubId, challenge, overwrite } = opts;
+  const { clubId, universityId, challenge, overwrite } = opts;
   const weekKey = opts.weekKey ?? getWeekKey();
   if (!clubId) throw new Error("clubId مفقود.");
 
@@ -72,6 +74,7 @@ export default async function saveChallengeService(opts: SaveOpts): Promise<Save
     const result: SavedChallenge = {
       id: ref.id,
       clubId: raw.clubId ?? clubId,
+      universityId,
       weekKey: raw.weekKey ?? weekKey,
       createdAt: raw.createdAt,
       clubMetrics: raw.clubMetrics ?? null,
@@ -110,6 +113,7 @@ export default async function saveChallengeService(opts: SaveOpts): Promise<Save
   const payload: Omit<SavedChallenge, "id"> = {
     ...challenge,
     clubId,
+    universityId,
     weekKey,
     participants: Number.isFinite(challenge.participants) ? challenge.participants : 0,
     createdAt: serverTimestamp(),

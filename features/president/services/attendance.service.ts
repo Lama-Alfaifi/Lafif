@@ -8,11 +8,13 @@ import {
 import { db } from "@/src/lib/firebase";
 
 export async function getEventAttendance(
-  eventId: string
+  eventId: string,
+  universityId: string
 ) {
   const q = query(
     collection(db, "eventRegistrations"),
-    where("eventId", "==", eventId)
+    where("eventId", "==", eventId),
+    where("universityId", "==", universityId)
   );
 
   const snapshot = await getDocs(q);

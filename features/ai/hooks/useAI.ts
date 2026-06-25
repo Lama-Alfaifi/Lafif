@@ -7,7 +7,7 @@ import type { ChallengeType } from "../types/challenge.types";
 import generateWeeklyChallenge from "../utils/generateWeeklyChallenge";
 import { getClubById } from "@/features/clubs/services/clubs.service";
 
-type UseAIArgs = { clubId: string; clubName: string; category: string };
+type UseAIArgs = { clubId: string; universityId: string; clubName: string; category: string };
 
 type UseAIState = {
   challenge: ChallengeType | null;
@@ -16,7 +16,7 @@ type UseAIState = {
   saved?: SavedChallenge;
 };
 
-export default function useAI({ clubId, clubName, category }: UseAIArgs): UseAIState {
+export default function useAI({ clubId, universityId, clubName, category }: UseAIArgs): UseAIState {
   const [challenge, setChallenge] = useState<ChallengeType | null>(null);
   const [saved, setSaved] = useState<SavedChallenge | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
@@ -38,7 +38,7 @@ export default function useAI({ clubId, clubName, category }: UseAIArgs): UseAIS
       setChallenge(ch);
 
       // 3) خزّن وثيقة الأسبوع (يمنع التكرار تلقائيًا)
-      const savedDoc = await saveChallengeService({ clubId, challenge: ch });
+      const savedDoc = await saveChallengeService({ clubId, universityId, challenge: ch });
       setSaved(savedDoc);
     } catch (e) {
       console.error(e);
@@ -46,7 +46,7 @@ export default function useAI({ clubId, clubName, category }: UseAIArgs): UseAIS
     } finally {
       setLoading(false);
     }
-  }, [clubId, clubName, category]);
+  }, [clubId, universityId, clubName, category]);
 
   useEffect(() => {
     generateChallenge();
