@@ -8,6 +8,7 @@ import {
   User,
   Bell,
   LogOut,
+  Trophy,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -16,10 +17,11 @@ import { useAuth } from "@/features/auth/context/AuthContext";
 import useNotifications from "@/features/notifications/hooks/useNotifications";
 
 const NAV = [
-  { href: "/dashboard",      label: "الرئيسية",  icon: LayoutDashboard },
-  { href: "/events",         label: "الفعاليات", icon: CalendarDays },
-  { href: "/notifications",  label: "الإشعارات", icon: Bell },
-  { href: "/profile",        label: "حسابي",     icon: User },
+  { href: "/dashboard",     label: "الرئيسية",   icon: LayoutDashboard },
+  { href: "/events",        label: "الفعاليات",  icon: CalendarDays },
+  { href: "/leaderboard",   label: "الترتيب",    icon: Trophy },
+  { href: "/notifications", label: "الإشعارات",  icon: Bell },
+  { href: "/profile",       label: "حسابي",      icon: User },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
