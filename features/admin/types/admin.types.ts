@@ -1,8 +1,12 @@
+import type { UserRole } from "@/features/shared/types/user.types";
+
 export type AppUser = {
   id: string;
   name?: string;
   email?: string;
-  role?: "member" | "president" | "admin";
+  role?: UserRole;
+  universityId?: string;
+  universityName?: string;
   clubId?: string;
   clubName?: string;
 };

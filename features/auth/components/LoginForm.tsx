@@ -71,6 +71,8 @@ export default function LoginForm() {
         router.push("/university-admin");
       } else if (userData?.role === "president") {
         router.push("/president");
+      } else if (userData?.role === "vicePresident") {
+        router.push("/president");
       } else {
         router.push("/dashboard");
       }

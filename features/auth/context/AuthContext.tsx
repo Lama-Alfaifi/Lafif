@@ -19,15 +19,7 @@ import {
 
 import { auth, db } from "@/src/lib/firebase";
 
-type UserProfile = {
-  name?: string;
-  email?: string;
-  role?: "member" | "president" | "admin" | "universityAdmin" | "superAdmin";
-  universityId?: string;
-  universityName?: string;
-  clubId?: string;
-  clubName?: string;
-};
+import type { UserProfile } from "@/features/shared/types/user.types";
 
 type AuthContextType = {
   user: User | null;

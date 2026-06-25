@@ -85,7 +85,7 @@ export default function RegisterForm() {
         {
           name: fullName,
           email: email.trim(),
-          role: "member",
+          role: "student",
           universityId: universityDoc.id,
           universityName: universityData.name,
           emailVerified: false,
