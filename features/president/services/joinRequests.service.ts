@@ -5,14 +5,10 @@ import {
   where,
   updateDoc,
   doc,
-  getDoc,
-  addDoc,
   serverTimestamp,
 } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase";
-
-import { createNotification } from "@/features/notifications/services/notifications.service";
 
 export async function getJoinRequests(
   clubId: string,
@@ -33,67 +29,19 @@ export async function getJoinRequests(
   }));
 }
 
-export async function approveJoinRequest(
-  requestId: string
-) {
-  const requestRef = doc(db, "joinRequests", requestId);
-  const requestSnap = await getDoc(requestRef);
-
-  if (!requestSnap.exists()) {
-    throw new Error("طلب الانضمام غير موجود");
-  }
-
-  const request = requestSnap.data();
-
-  await updateDoc(requestRef, {
+// Only updates the status field.
+// Role update, clubMembers creation, and notification
+// are handled server-side by the onJoinRequestUpdated Firebase Function.
+export async function approveJoinRequest(requestId: string) {
+  await updateDoc(doc(db, "joinRequests", requestId), {
     status: "approved",
     reviewedAt: serverTimestamp(),
   });
-
-  await addDoc(collection(db, "clubMembers"), {
-    userId: request.userId,
-    userName: request.userName || "",
-    userEmail: request.userEmail || "",
-
-    clubId: request.clubId,
-    clubName: request.clubName || "",
-
-    universityId: request.universityId,
-    universityName: request.universityName || "",
-
-    role: "member",
-    joinedAt: serverTimestamp(),
-  });
-
-  await createNotification({
-    userId: request.userId,
-    title: "تم قبول طلب الانضمام",
-    message: `تم قبول طلب انضمامك إلى ${request.clubName}. يمكنك الآن المشاركة كعضو في النادي.`,
-    type: "join-approved",
-  });
 }
 
-export async function rejectJoinRequest(
-  requestId: string
-) {
-  const requestRef = doc(db, "joinRequests", requestId);
-  const requestSnap = await getDoc(requestRef);
-
-  if (!requestSnap.exists()) {
-    throw new Error("طلب الانضمام غير موجود");
-  }
-
-  const request = requestSnap.data();
-
-  await updateDoc(requestRef, {
+export async function rejectJoinRequest(requestId: string) {
+  await updateDoc(doc(db, "joinRequests", requestId), {
     status: "rejected",
     reviewedAt: serverTimestamp(),
-  });
-
-  await createNotification({
-    userId: request.userId,
-    title: "بخصوص طلب الانضمام للنادي",
-    message: `نشكر لك رغبتك في الانضمام إلى ${request.clubName}. نعتذر، لم تتم الموافقة على طلبك حاليًا، ونسعد بمشاركتك في فعاليات النادي القادمة.`,
-    type: "join-rejected",
   });
 }
