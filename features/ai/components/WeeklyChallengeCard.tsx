@@ -1,7 +1,7 @@
 // features/ai/components/WeeklyChallengeCard.tsx
 "use client";
 
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import useAI from "../hooks/useAI";
 import type { ChallengeType } from "../types/challenge.types";
 

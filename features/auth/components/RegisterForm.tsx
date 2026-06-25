@@ -37,7 +37,7 @@ export default function RegisterForm() {
   const [err, setErr] = useState("");
   const [success, setSuccess] = useState("");
 
-  async function handleRegister(e: React.FormEvent) {
+  async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
     setErr("");

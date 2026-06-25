@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, Clock, MapPin } from "lucide-react";
+import { Clock, MapPin } from "lucide-react";
 import type { EventItem } from "../types/event.types";
 
 type Props = {
