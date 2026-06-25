@@ -4,58 +4,42 @@ import Sidebar from "@/features/dashboard/components/Sidebar";
 import Topbar from "@/features/dashboard/components/Topbar";
 import CountdownCard from "@/features/dashboard/components/CountdownCard";
 import ClubGrid from "@/features/dashboard/components/ClubGrid";
-
 import useDashboardClubs from "@/features/dashboard/hooks/useDashboardClubs";
 
 export default function DashboardPage() {
-  const {
-    centralClubs,
-    decentralizedClubs,
-    loading,
-  } = useDashboardClubs();
+  const { centralClubs, decentralizedClubs, loading } = useDashboardClubs();
 
   return (
-    <main className="min-h-screen bg-[#EFE8F7] p-5 overflow-hidden">
-      <div
-        className="
-          flex
-          h-[calc(100vh-40px)]
-          rounded-[36px]
-          bg-white/60
-          backdrop-blur-xl
-          border border-white/80
-          shadow-2xl
-          overflow-hidden
-        "
-      >
-        <section className="flex-1 h-full p-6 lg:p-8 overflow-y-auto">
-          <Topbar />
+    <div className="flex min-h-screen bg-[#F7F5FF]">
+      {/* Main content */}
+      <div className="flex-1 min-w-0 flex flex-col">
+        <Topbar />
 
-          <div className="mt-7">
+        <div className="flex-1 p-6 lg:p-8">
+          {/* Background blobs */}
+          <div className="pointer-events-none fixed -top-24 -left-24 w-96 h-96 rounded-full bg-purple-300/15 blur-3xl" />
+          <div className="pointer-events-none fixed bottom-10 right-80 w-80 h-80 rounded-full bg-emerald-200/15 blur-3xl" />
+
+          <div className="relative">
             <CountdownCard />
+
+            {loading ? (
+              <div className="mt-12 flex items-center justify-center py-12">
+                <p className="text-sm font-bold text-[#21166A]">
+                  جاري تحميل أندية جامعتك...
+                </p>
+              </div>
+            ) : (
+              <>
+                <ClubGrid title="الأندية المركزية"    clubs={centralClubs} />
+                <ClubGrid title="الأندية اللامركزية" clubs={decentralizedClubs} />
+              </>
+            )}
           </div>
-
-          {loading ? (
-            <p className="mt-8 text-sm font-bold text-[#21166A]">
-              جاري تحميل أندية جامعتك...
-            </p>
-          ) : (
-            <>
-              <ClubGrid
-                title="الأندية المركزية"
-                clubs={centralClubs}
-              />
-
-              <ClubGrid
-                title="الأندية اللامركزية"
-                clubs={decentralizedClubs}
-              />
-            </>
-          )}
-        </section>
-
-        <Sidebar />
+        </div>
       </div>
-    </main>
+
+      <Sidebar />
+    </div>
   );
 }
