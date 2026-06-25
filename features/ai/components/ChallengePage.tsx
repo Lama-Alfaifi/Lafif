@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { submitChallenge, getExistingSubmission } from "../services/submitChallenge.service";
 import { getQuestionsForCategory } from "../utils/questionBank";
+import ChallengeCertificate from "./ChallengeCertificate";
 import type {
   ChallengeType, MCQQuestion, ChallengeSubmission,
 } from "../types/challenge.types";
@@ -400,6 +401,14 @@ export default function ChallengePage({
               </div>
             )}
           </div>
+
+          {/* Certificate */}
+          <ChallengeCertificate
+            submission={submission}
+            userName={profile?.name ?? "مشارك"}
+            clubName={submission.clubId}
+            universityName={profile?.universityName ?? ""}
+          />
         </div>
       </div>
     );
