@@ -9,6 +9,7 @@ import {
   Bell,
   LogOut,
   Trophy,
+  MessageSquare,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -22,6 +23,7 @@ const NAV = [
   { href: "/leaderboard",   label: "الترتيب",    icon: Trophy },
   { href: "/notifications", label: "الإشعارات",  icon: Bell },
   { href: "/profile",       label: "حسابي",      icon: User },
+  { href: "/support",       label: "الدعم",       icon: MessageSquare },
 ];
 
 const ROLE_LABEL: Record<string, string> = {
