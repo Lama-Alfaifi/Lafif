@@ -10,6 +10,7 @@ import CreateEventModal     from "./CreateEventModal";
 import ClubEventsTable      from "./ClubEventsTable";
 import EventAttendanceCard  from "./EventAttendanceCard";
 import usePresidentClub     from "../hooks/usePresidentClub";
+import WeeklyChallengeCard  from "@/features/ai/components/WeeklyChallengeCard";
 
 export default function PresidentDashboard() {
   const [showCreateEvent, setShowCreateEvent] = useState(false);
@@ -126,6 +127,14 @@ export default function PresidentDashboard() {
                   </div>
                 </div>
               </div>
+
+              {/* Weekly AI Challenge */}
+              <WeeklyChallengeCard
+                clubId={data!.clubId!}
+                universityId={data!.universityId!}
+                clubName={data!.clubName ?? ""}
+                category="عام"
+              />
 
               {/* Attendance */}
               <EventAttendanceCard

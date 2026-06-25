@@ -1,5 +1,6 @@
 // features/ai/utils/generateWeeklyChallenge.ts
 import type { ChallengeType } from "../types/challenge.types";
+import { getQuestionsForCategory } from "./questionBank";
 
 // أدوات مساعدة
 function pick<T>(arr: T[]): T {
@@ -81,5 +82,6 @@ export default function generateWeeklyChallenge(
     deadline: computeDeadlineText(),
     participants: 0,
     aiGenerated: true,
+    questions: getQuestionsForCategory(category, 5),
   };
 }

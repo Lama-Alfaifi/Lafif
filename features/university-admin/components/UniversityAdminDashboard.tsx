@@ -1,20 +1,40 @@
 "use client";
 
 import { useState } from "react";
+import { Plus, Building2, BookOpen, LayoutGrid, TrendingUp } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
-
-import { Plus, Search, Bell } from "lucide-react";
-
 import CreateClubModal from "./CreateClubModal";
 import UniversityClubsTable from "./UniversityClubsTable";
-
 import useUniversityClubs from "../hooks/useUniversityClubs";
+
+function StatCard({
+  icon,
+  label,
+  value,
+  accent,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string | number;
+  accent?: string;
+}) {
+  return (
+    <div className="bg-white rounded-[20px] p-5 shadow-md border border-gray-50 flex items-center gap-4" dir="rtl">
+      <div className={`w-11 h-11 rounded-[14px] flex items-center justify-center shrink-0 ${accent ?? "bg-[#EFE8F7]"}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs font-bold text-gray-400">{label}</p>
+        <p className="text-2xl font-black text-[#21166A] mt-0.5">{value}</p>
+      </div>
+    </div>
+  );
+}
 
 export default function UniversityAdminDashboard() {
   const { user, profile, loading } = useAuth();
-
   const [showCreateClub, setShowCreateClub] = useState(false);
 
   const {
@@ -25,106 +45,107 @@ export default function UniversityAdminDashboard() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-[#EFE8F7] flex items-center justify-center">
-        <p className="font-bold text-[#21166A]">
-          جاري تحميل بيانات الأدمن...
-        </p>
-      </main>
+      <div className="flex min-h-screen bg-[#F7F5FF] items-center justify-center">
+        <p className="font-bold text-[#21166A]">جاري تحميل بيانات الأدمن...</p>
+      </div>
     );
   }
 
-  if (
-    !user ||
-    profile?.role !== "universityAdmin" ||
-    !profile?.universityId
-  ) {
+  if (!user || profile?.role !== "universityAdmin" || !profile?.universityId) {
     return (
-      <main className="min-h-screen bg-[#EFE8F7] flex items-center justify-center">
-        <p className="font-bold text-[#21166A]">
-          لا تملكين صلاحية دخول لوحة أدمن الجامعة.
-        </p>
-      </main>
+      <div className="flex min-h-screen bg-[#F7F5FF] items-center justify-center" dir="rtl">
+        <div className="text-center">
+          <Building2 size={32} className="text-gray-300 mx-auto mb-3" />
+          <p className="font-bold text-[#21166A]">لا تملك صلاحية دخول لوحة أدمن الجامعة.</p>
+        </div>
+      </div>
     );
   }
 
-  const centralCount = clubs.filter(
-    (club) => club.category !== "decentralized"
-  ).length;
-
-  const decentralizedCount = clubs.filter(
-    (club) => club.category === "decentralized"
-  ).length;
+  const centralCount     = clubs.filter((c) => c.category !== "decentralized").length;
+  const decentralized    = clubs.filter((c) => c.category === "decentralized").length;
+  const withPresident    = clubs.filter((c) => c.presidentId).length;
 
   return (
-    <main className="min-h-screen bg-[#EFE8F7] p-5 overflow-hidden">
-      <div className="flex h-[calc(100vh-40px)] rounded-[36px] bg-white/60 backdrop-blur-xl border border-white/80 shadow-2xl overflow-hidden">
-        <section className="flex-1 h-full overflow-y-auto p-7">
-          <div className="flex items-center justify-between mb-7">
+    <div className="flex min-h-screen bg-[#F7F5FF]">
+      <div className="flex-1 min-w-0 flex flex-col">
+
+        {/* Sticky header */}
+        <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
+          <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
             <div className="flex items-center gap-4">
-              <button className="w-11 h-11 rounded-2xl bg-white shadow-md flex items-center justify-center relative">
-                <Bell size={18} className="text-[#21166A]" />
-                <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full" />
-              </button>
-
-              <div className="w-[300px] h-12 rounded-2xl bg-white shadow-md px-4 flex items-center gap-3">
-                <Search size={18} className="text-gray-400" />
-                <input
-                  placeholder="ابحث..."
-                  className="w-full bg-transparent outline-none text-sm text-right placeholder:text-gray-300"
-                />
+              <div className="w-10 h-10 rounded-[14px] bg-[#EFE8F7] flex items-center justify-center shrink-0">
+                <Building2 size={18} className="text-[#7C3AED]" />
               </div>
-            </div>
-
-            <div className="text-right">
-              <h1 className="text-3xl font-black text-[#21166A]">
-                لوحة أدمن الجامعة
-              </h1>
-
-              <p className="text-sm text-gray-500 mt-1">
-                {profile.universityName}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-[26px] p-5 shadow-lg">
-              <p className="text-sm text-gray-500">عدد الأندية</p>
-              <h3 className="mt-3 text-3xl font-black text-[#21166A]">
-                {clubs.length}
-              </h3>
-            </div>
-
-            <div className="bg-white rounded-[26px] p-5 shadow-lg">
-              <p className="text-sm text-gray-500">الأندية المركزية</p>
-              <h3 className="mt-3 text-3xl font-black text-[#21166A]">
-                {centralCount}
-              </h3>
-            </div>
-
-            <div className="bg-white rounded-[26px] p-5 shadow-lg">
-              <p className="text-sm text-gray-500">الأندية اللامركزية</p>
-              <h3 className="mt-3 text-3xl font-black text-[#21166A]">
-                {decentralizedCount}
-              </h3>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full bg-[#EFE8F7] text-[10px] font-black text-[#7C3AED] uppercase tracking-wide">
+                    University Admin
+                  </span>
+                </div>
+                <h1 className="text-xl font-black text-[#21166A]">{profile.universityName}</h1>
+              </div>
             </div>
 
             <button
               onClick={() => setShowCreateClub(true)}
-              className="bg-[#7C3AED] rounded-[26px] p-5 shadow-lg text-white flex items-center justify-center gap-2 font-bold"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#21166A] text-white text-sm font-bold hover:opacity-90 transition shadow"
             >
-              <Plus size={20} />
+              <Plus size={16} />
               إضافة نادي
             </button>
           </div>
+        </header>
 
-          <UniversityClubsTable
-            clubs={clubs}
-            loading={clubsLoading}
-          />
-        </section>
+        {/* Content */}
+        <div className="flex-1 p-6 lg:p-8" dir="rtl">
 
-        <Sidebar />
+          {/* Stats */}
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            <StatCard
+              icon={<LayoutGrid size={18} className="text-[#7C3AED]" />}
+              label="إجمالي الأندية"
+              value={clubs.length}
+              accent="bg-[#EFE8F7]"
+            />
+            <StatCard
+              icon={<BookOpen size={18} className="text-blue-500" />}
+              label="الأندية المركزية"
+              value={centralCount}
+              accent="bg-blue-50"
+            />
+            <StatCard
+              icon={<TrendingUp size={18} className="text-emerald-500" />}
+              label="الأندية اللامركزية"
+              value={decentralized}
+              accent="bg-emerald-50"
+            />
+            <StatCard
+              icon={<Building2 size={18} className="text-amber-500" />}
+              label="أندية لها رئيس"
+              value={withPresident}
+              accent="bg-amber-50"
+            />
+          </div>
+
+          {/* Clubs table card */}
+          <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LayoutGrid size={15} className="text-[#7C3AED]" />
+                <h2 className="text-base font-black text-[#21166A]">قائمة الأندية</h2>
+              </div>
+              {clubsLoading && (
+                <span className="text-xs text-gray-400 font-bold">جاري التحميل...</span>
+              )}
+            </div>
+
+            <UniversityClubsTable clubs={clubs} loading={clubsLoading} />
+          </div>
+        </div>
       </div>
+
+      <Sidebar />
 
       {showCreateClub && (
         <CreateClubModal
@@ -134,6 +155,6 @@ export default function UniversityAdminDashboard() {
           onCreated={loadClubs}
         />
       )}
-    </main>
+    </div>
   );
 }

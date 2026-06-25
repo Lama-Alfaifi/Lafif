@@ -10,6 +10,7 @@ type UniversityClub = {
   college?: string;
   category?: "central" | "decentralized";
   email?: string;
+  presidentId?: string;
 };
 
 export default function useUniversityClubs(

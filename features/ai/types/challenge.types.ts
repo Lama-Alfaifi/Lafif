@@ -1,5 +1,3 @@
-// features/ai/types/challenge.types.ts
-
 export type ChallengeDifficulty = "سهل" | "متوسط" | "صعب";
 
 export type ChallengeKind =
@@ -14,16 +12,38 @@ export type ChallengeKind =
   | "Editing"
   | "General Challenge";
 
+export type MCQQuestion = {
+  question: string;
+  options: [string, string, string, string];
+  correctIndex: 0 | 1 | 2 | 3;
+};
+
 export type ChallengeType = {
   clubName: string;
   category: string;
   title: string;
   description: string;
-  challengeType: string;   // يمكنك لاحقًا تقييده بـ ChallengeKind
-  difficulty: string;      // يمكنك لاحقًا تقييده بـ ChallengeDifficulty
+  challengeType: string;
+  difficulty: string;
   points: number;
-  duration: string;        // مثال: "20 دقيقة"
-  deadline: string;        // مثال: "الخميس 11:00 مساءً"
+  duration: string;
+  deadline: string;
   participants: number;
   aiGenerated: boolean;
+  questions?: MCQQuestion[];
+};
+
+export type ChallengeSubmission = {
+  id: string;
+  userId: string;
+  userName: string;
+  clubId: string;
+  universityId: string;
+  weekKey: string;
+  challengeId: string;
+  correctCount: number;
+  totalQuestions: number;
+  timeSeconds: number;
+  score: number;
+  submittedAt?: unknown;
 };

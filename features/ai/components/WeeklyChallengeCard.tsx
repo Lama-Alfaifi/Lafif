@@ -2,6 +2,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { useRouter } from "next/navigation";
 import useAI from "../hooks/useAI";
 import type { ChallengeType } from "../types/challenge.types";
 
@@ -28,6 +29,7 @@ export default function WeeklyChallengeCard({
   category,
   onStart,
 }: WeeklyChallengeCardProps) {
+  const router = useRouter();
   const { challenge, loading, error, saved } = useAI({ clubId, universityId, clubName, category });
 
   const subtitle = useMemo(
@@ -110,7 +112,13 @@ export default function WeeklyChallengeCard({
         </div>
 
         <button
-          onClick={() => onStart?.(challenge)}
+          onClick={() => {
+            if (saved?.id) {
+              router.push(`/challenge/${saved.id}`);
+            } else {
+              onStart?.(challenge);
+            }
+          }}
           className="px-5 py-3 rounded-2xl bg-[#0F172A] text-white hover:scale-105 active:scale-95 transition-all duration-300"
         >
           ابدأ التحدي
