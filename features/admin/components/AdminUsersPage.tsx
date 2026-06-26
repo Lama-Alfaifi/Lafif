@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, ChevronDown, CheckCircle, XCircle, UserCog } from "lucide-react";
+import { Users, Shield, ChevronDown, CheckCircle, XCircle, UserCog, Wrench, Loader2 } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import useUsers from "../hooks/useUsers";
 import useAdminClubs from "../hooks/useAdminClubs";
-import { assignPresident, removePresidentRole } from "../services/users.service";
+import { assignPresident, removePresidentRole, fixUserUniversityData, type FixResult } from "../services/users.service";
 
 const ROLE_LABELS: Record<string, string> = {
   superAdmin:      "سوبر أدمن",
@@ -160,7 +160,21 @@ function UniversitySection({
 /* ─── Main page ────────────────────────────────────────────────────── */
 export default function AdminUsersPage() {
   const { users, loading, loadUsers } = useUsers();
-  const [actionUserId, setActionUserId] = useState<string | null>(null);
+  const [actionUserId, setActionUserId]   = useState<string | null>(null);
+  const [fixing, setFixing]               = useState(false);
+  const [fixResult, setFixResult]         = useState<FixResult | null>(null);
+
+  async function handleFixUniversities() {
+    setFixing(true);
+    setFixResult(null);
+    try {
+      const result = await fixUserUniversityData();
+      setFixResult(result);
+      await loadUsers();
+    } finally {
+      setFixing(false);
+    }
+  }
 
   const usersByUniversity = users.reduce<Record<string, typeof users>>(
     (acc, user) => {
@@ -216,6 +230,16 @@ export default function AdminUsersPage() {
                   {users.filter((u) => u.role === "president").length} رئيس
                 </span>
               </div>
+              <button
+                onClick={handleFixUniversities}
+                disabled={fixing}
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50 shadow-sm"
+              >
+                {fixing
+                  ? <><Loader2 size={13} className="animate-spin" />جاري الإصلاح...</>
+                  : <><Wrench size={13} />إصلاح بيانات الجامعة</>
+                }
+              </button>
             </div>
           </div>
         </header>
@@ -255,6 +279,44 @@ export default function AdminUsersPage() {
           {actionUserId && (
             <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#21166A] text-white px-5 py-3 rounded-2xl shadow-xl text-sm font-bold z-50">
               جاري تحديث الصلاحية...
+            </div>
+          )}
+
+          {fixResult && (
+            <div
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-md bg-white rounded-[24px] shadow-2xl border border-gray-100 overflow-hidden"
+              dir="rtl"
+            >
+              <div className="bg-amber-500 px-5 py-3 flex items-center justify-between">
+                <span className="text-white text-sm font-black">نتيجة إصلاح بيانات الجامعة</span>
+                <button
+                  onClick={() => setFixResult(null)}
+                  className="text-white/70 hover:text-white text-lg leading-none"
+                >×</button>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="bg-emerald-50 rounded-2xl py-2">
+                    <p className="text-lg font-black text-emerald-600">{fixResult.fixed}</p>
+                    <p className="text-[10px] text-emerald-500 font-bold">تم إصلاحه</p>
+                  </div>
+                  <div className="bg-gray-50 rounded-2xl py-2">
+                    <p className="text-lg font-black text-gray-500">{fixResult.skipped}</p>
+                    <p className="text-[10px] text-gray-400 font-bold">سليم مسبقاً</p>
+                  </div>
+                  <div className="bg-red-50 rounded-2xl py-2">
+                    <p className="text-lg font-black text-red-500">{fixResult.failed}</p>
+                    <p className="text-[10px] text-red-400 font-bold">فشل / نطاق مجهول</p>
+                  </div>
+                </div>
+                {fixResult.details.length > 0 && (
+                  <div className="max-h-32 overflow-y-auto space-y-1">
+                    {fixResult.details.map((d, i) => (
+                      <p key={i} className="text-[11px] text-gray-500 font-bold bg-gray-50 rounded-xl px-3 py-1.5">{d}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>
