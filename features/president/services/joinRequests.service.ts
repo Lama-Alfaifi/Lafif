@@ -17,7 +17,6 @@ export async function getJoinRequests(
   const q = query(
     collection(db, "joinRequests"),
     where("clubId", "==", clubId),
-    where("universityId", "==", universityId),
     where("status", "==", "pending")
   );
 

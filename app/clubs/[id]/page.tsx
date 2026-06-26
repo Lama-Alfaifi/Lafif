@@ -82,7 +82,7 @@ export default function ClubPage() {
         userEmail:     profile.email ?? user.email ?? "",
         clubId,
         clubName:      club?.name ?? "",
-        universityId:  profile.universityId ?? club?.universityId ?? "",
+        universityId:  profile.universityId || club?.universityId || "",
         universityName: profile.universityName ?? "",
         status:        "pending",
         createdAt:     serverTimestamp(),
