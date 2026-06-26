@@ -1,4 +1,6 @@
+"use client";
 import Link from "next/link";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 type Club = {
   id: string;
@@ -11,10 +13,8 @@ type ClubGridProps = {
   clubs: Club[];
 };
 
-export default function ClubGrid({
-  title,
-  clubs,
-}: ClubGridProps) {
+export default function ClubGrid({ title, clubs }: ClubGridProps) {
+  const { t } = useLanguage();
   return (
     <section className="mt-8">
       <div className="flex items-center justify-between mb-4">
@@ -29,7 +29,7 @@ export default function ClubGrid({
         </div>
 
         <span className="px-3 py-1.5 rounded-full bg-white text-[#21166A] text-xs font-bold shadow-sm">
-          {clubs.length} نادي
+          {clubs.length} {t.dashboard.clubCount}
         </span>
       </div>
 
@@ -103,7 +103,7 @@ export default function ClubGrid({
                   line-clamp-1
                 "
               >
-                {club.college || "نادي لامركزي"}
+                {club.college || t.dashboard.decentFallback}
               </p>
             </div>
 
@@ -122,7 +122,7 @@ export default function ClubGrid({
                   font-bold
                 "
               >
-                عرض النادي
+                {t.dashboard.viewClub}
               </span>
             </div>
           </Link>

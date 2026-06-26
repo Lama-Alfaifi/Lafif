@@ -4,6 +4,7 @@ import { useState } from "react";
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import useEvents from "../hooks/useEvents";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 import EventCalendar    from "./EventCalendar";
 import EventDetailsCard from "./EventDetailsCard";
@@ -14,12 +15,6 @@ import type { EventItem } from "../types/event.types";
 
 type Filter = "all" | "public" | "members";
 
-const FILTER_OPTIONS: { value: Filter; label: string }[] = [
-  { value: "all",     label: "الكل" },
-  { value: "public",  label: "عامة" },
-  { value: "members", label: "للأعضاء فقط" },
-];
-
 function applyFilter(events: EventItem[], filter: Filter): EventItem[] {
   if (filter === "all") return events;
   return events.filter((e) => e.type === filter);
@@ -28,8 +23,15 @@ function applyFilter(events: EventItem[], filter: Filter): EventItem[] {
 export default function EventsPageContent() {
   const { profile } = useAuth();
   const { events, selectedEvent, setSelectedEvent, loading } = useEvents();
+  const { t, dir }  = useLanguage();
   const [filter, setFilter] = useState<Filter>("all");
   const [statsRefreshKey, setStatsRefreshKey] = useState(0);
+
+  const FILTER_OPTIONS: { value: Filter; label: string }[] = [
+    { value: "all",     label: t.events.filterAll },
+    { value: "public",  label: t.events.filterPub },
+    { value: "members", label: t.events.filterMem },
+  ];
 
   const filtered = applyFilter(events, filter);
 
@@ -39,13 +41,13 @@ export default function EventsPageContent() {
 
         {/* Sticky page header */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-          <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
+          <div className="px-8 py-4 flex items-center justify-between" dir={dir}>
             <div>
-              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">تقويم الفعاليات</p>
+              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">{t.events.calendarTag}</p>
               <h1 className="text-xl font-black text-[#21166A]">
                 {profile?.universityName
-                  ? `فعاليات ${profile.universityName}`
-                  : "الفعاليات"}
+                  ? `${t.events.eventsOf} ${profile.universityName}`
+                  : t.events.title}
               </h1>
             </div>
 
@@ -72,16 +74,14 @@ export default function EventsPageContent() {
         <div className="flex-1 p-6 lg:p-8">
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <p className="font-bold text-[#21166A]">جاري تحميل الفعاليات...</p>
+              <p className="font-bold text-[#21166A]">{t.events.loadingEvt}</p>
             </div>
           ) : events.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-24 gap-4 text-center" dir="rtl">
-              <div className="w-16 h-16 rounded-[24px] bg-white shadow-md flex items-center justify-center text-3xl">
-                📅
-              </div>
+            <div className="flex flex-col items-center justify-center py-24 gap-4 text-center" dir={dir}>
+              <div className="w-16 h-16 rounded-[24px] bg-white shadow-md flex items-center justify-center text-3xl">📅</div>
               <div>
-                <p className="text-sm font-black text-[#21166A]">لا توجد فعاليات حاليًا</p>
-                <p className="text-xs text-gray-400 mt-1">سيتم إضافة فعاليات جديدة قريبًا</p>
+                <p className="text-sm font-black text-[#21166A]">{t.events.noEvents}</p>
+                <p className="text-xs text-gray-400 mt-1">{t.events.noEventsSub}</p>
               </div>
             </div>
           ) : (

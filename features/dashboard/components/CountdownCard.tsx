@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 export default function CountdownCard() {
+  const { t } = useLanguage();
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
     hours: 0,
@@ -80,7 +82,7 @@ export default function CountdownCard() {
       "
     >
       <h1 className="text-base lg:text-lg font-bold">
-        العد التنازلي للفعالية القادمة
+        {t.dashboard.countdown}
       </h1>
 
       <div className="flex items-center gap-5">
@@ -90,39 +92,22 @@ export default function CountdownCard() {
             {timeLeft.days}
           </h2>
 
-          <p className="text-[11px] opacity-90 mt-1">
-            يوم
-          </p>
+          <p className="text-[11px] opacity-90 mt-1">{t.dashboard.days}</p>
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-black leading-none">
-            {timeLeft.hours}
-          </h2>
-
-          <p className="text-[11px] opacity-90 mt-1">
-            ساعة
-          </p>
+          <h2 className="text-2xl font-black leading-none">{timeLeft.hours}</h2>
+          <p className="text-[11px] opacity-90 mt-1">{t.dashboard.hours}</p>
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-black leading-none">
-            {timeLeft.minutes}
-          </h2>
-
-          <p className="text-[11px] opacity-90 mt-1">
-            دقيقة
-          </p>
+          <h2 className="text-2xl font-black leading-none">{timeLeft.minutes}</h2>
+          <p className="text-[11px] opacity-90 mt-1">{t.dashboard.minutes}</p>
         </div>
 
         <div className="text-center">
-          <h2 className="text-2xl font-black leading-none">
-            {timeLeft.seconds}
-          </h2>
-
-          <p className="text-[11px] opacity-90 mt-1">
-            ثانية
-          </p>
+          <h2 className="text-2xl font-black leading-none">{timeLeft.seconds}</h2>
+          <p className="text-[11px] opacity-90 mt-1">{t.dashboard.seconds}</p>
         </div>
 
       </div>

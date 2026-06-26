@@ -3,43 +3,31 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutDashboard,
-  CalendarDays,
-  User,
-  Bell,
-  LogOut,
-  Trophy,
-  MessageSquare,
+  LayoutDashboard, CalendarDays, User, Bell,
+  LogOut, Trophy, MessageSquare, Globe,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
 import { auth } from "@/src/lib/firebase";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import useNotifications from "@/features/notifications/hooks/useNotifications";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
-const NAV = [
-  { href: "/dashboard",     label: "الرئيسية",   icon: LayoutDashboard },
-  { href: "/events",        label: "الفعاليات",  icon: CalendarDays },
-  { href: "/leaderboard",   label: "الترتيب",    icon: Trophy },
-  { href: "/notifications", label: "الإشعارات",  icon: Bell },
-  { href: "/profile",       label: "حسابي",      icon: User },
-  { href: "/support",       label: "الدعم",       icon: MessageSquare },
-];
-
-const ROLE_LABEL: Record<string, string> = {
-  student:         "طالب",
-  member:          "عضو",
-  vicePresident:   "نائب الرئيس",
-  president:       "رئيس النادي",
-  universityAdmin: "مسؤول الجامعة",
-  superAdmin:      "مسؤول النظام",
-};
+const NAV_HREFS = [
+  { href: "/dashboard",     key: "home",          icon: LayoutDashboard },
+  { href: "/events",        key: "events",         icon: CalendarDays },
+  { href: "/leaderboard",   key: "leaderboard",    icon: Trophy },
+  { href: "/notifications", key: "notifications",  icon: Bell },
+  { href: "/profile",       key: "profile",        icon: User },
+  { href: "/support",       key: "support",        icon: MessageSquare },
+] as const;
 
 export default function Sidebar() {
-  const pathname   = usePathname();
-  const router     = useRouter();
-  const { profile } = useAuth();
+  const pathname        = usePathname();
+  const router          = useRouter();
+  const { profile }     = useAuth();
   const { unreadCount } = useNotifications();
+  const { t, lang, setLang, isRTL } = useLanguage();
 
   async function handleLogout() {
     await signOut(auth);
@@ -47,24 +35,35 @@ export default function Sidebar() {
   }
 
   const firstName = profile?.name?.split(" ")[0] ?? "";
-  const roleLabel = ROLE_LABEL[profile?.role ?? ""] ?? "طالب";
-  const initial   = (profile?.name ?? "؟")[0];
+  const roleLabel = t.roles[profile?.role as keyof typeof t.roles] ?? profile?.role ?? "";
+  const initial   = (profile?.name ?? "?")[0];
 
   return (
     <aside
       className="w-[240px] shrink-0 h-screen sticky top-0 bg-white border-l border-gray-100 shadow-sm flex flex-col"
-      dir="rtl"
+      dir={isRTL ? "rtl" : "ltr"}
     >
-      {/* Logo */}
-      <div className="px-6 pt-7 pb-5 border-b border-gray-50">
-        <span className="text-3xl font-black text-[#21166A]">لفيف</span>
-        <p className="text-xs font-bold text-[#7C3AED] mt-1">منصة الأندية الجامعية</p>
+      {/* Logo + language toggle */}
+      <div className="px-6 pt-7 pb-5 border-b border-gray-50 flex items-start justify-between">
+        <div>
+          <span className="text-3xl font-black text-[#21166A]">لفيف</span>
+          <p className="text-xs font-bold text-[#7C3AED] mt-1">{t.nav.tagline}</p>
+        </div>
+        <button
+          onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+          className="mt-1 flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-[#F7F5FF] hover:bg-[#EFE8F7] transition text-[11px] font-bold text-[#7C3AED]"
+          title="Switch language"
+        >
+          <Globe size={12} />
+          {t.lang}
+        </button>
       </div>
 
       {/* Nav links */}
       <nav className="flex-1 px-3 py-5 space-y-1">
-        {NAV.map(({ href, label, icon: Icon }) => {
+        {NAV_HREFS.map(({ href, key, icon: Icon }) => {
           const active = pathname === href;
+          const label  = t.nav[key];
           return (
             <Link
               key={href}
@@ -111,7 +110,7 @@ export default function Sidebar() {
           className="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-bold text-red-400 hover:bg-red-50 hover:text-red-600 transition"
         >
           <LogOut size={18} />
-          تسجيل الخروج
+          {t.nav.logout}
         </button>
       </div>
     </aside>

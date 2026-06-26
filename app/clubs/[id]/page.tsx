@@ -8,6 +8,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/src/lib/firebase";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import {
   User, Mail, Trophy, Target, BookOpen,
   ArrowRight, CheckCircle, Clock,
@@ -32,6 +33,7 @@ export default function ClubPage() {
   const params = useParams();
   const router = useRouter();
   const { user, profile, loading: authLoading } = useAuth();
+  const { t, dir } = useLanguage();
 
   const [club, setClub] = useState<Club | null>(null);
   const [pageLoading, setPageLoading] = useState(true);
@@ -72,7 +74,7 @@ export default function ClubPage() {
   }, [user?.uid, profile?.clubId, clubId, authLoading]);
 
   async function handleJoinRequest() {
-    if (!user || !profile) { setMessage("يجب تسجيل الدخول أولاً"); return; }
+    if (!user || !profile) { setMessage(t.clubPage.mustLogin); return; }
     setRequestLoading(true);
     setMessage("");
     try {
@@ -88,9 +90,9 @@ export default function ClubPage() {
         createdAt:     serverTimestamp(),
       });
       setJoinStatus("pending");
-      setMessage("تم إرسال الطلب بنجاح! سيتم إشعارك عند قبوله.");
+      setMessage(t.clubPage.joinSuccess);
     } catch {
-      setMessage("حدث خطأ أثناء الإرسال، حاول مرة أخرى.");
+      setMessage(t.clubPage.joinError);
     } finally {
       setRequestLoading(false);
     }
@@ -118,28 +120,24 @@ export default function ClubPage() {
     if (joinStatus === "member") {
       return (
         <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-emerald-100 text-emerald-700 text-sm font-bold">
-          <CheckCircle size={16} />
-          أنت عضو في هذا النادي
+          <CheckCircle size={16} />{t.clubPage.member}
         </div>
       );
     }
-
     if (joinStatus === "pending") {
       return (
         <div className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-amber-100 text-amber-700 text-sm font-bold">
-          <Clock size={16} />
-          طلبك قيد المراجعة
+          <Clock size={16} />{t.clubPage.pending}
         </div>
       );
     }
-
     return (
       <button
         onClick={handleJoinRequest}
         disabled={requestLoading}
         className="px-5 py-2.5 rounded-2xl bg-[#21166A] text-white text-sm font-bold hover:opacity-90 transition disabled:opacity-60 shadow"
       >
-        {requestLoading ? "جارٍ الإرسال..." : "طلب الانضمام"}
+        {requestLoading ? t.clubPage.joining : t.clubPage.joinBtn}
       </button>
     );
   }
@@ -150,9 +148,9 @@ export default function ClubPage() {
 
         {/* Sticky page header */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-          <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
+          <div className="px-8 py-4 flex items-center justify-between" dir={dir}>
             <div>
-              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">الأندية</p>
+              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">{t.clubPage.clubs}</p>
               <h1 className="text-xl font-black text-[#21166A]">{club.name}</h1>
             </div>
             <button
@@ -160,7 +158,7 @@ export default function ClubPage() {
               className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#F7F5FF] border border-gray-100 text-sm font-bold text-gray-500 hover:bg-[#EFE8F7] hover:text-[#21166A] transition"
             >
               <ArrowRight size={16} />
-              رجوع
+              {t.back}
             </button>
           </div>
         </header>
@@ -212,7 +210,7 @@ export default function ClubPage() {
                 <User size={18} className="text-[#7C3AED]" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 font-bold">رئيس النادي</p>
+                <p className="text-xs text-gray-400 font-bold">{t.clubPage.presidentLabel}</p>
                 <p className="text-sm font-black text-[#21166A] mt-0.5">{club.president}</p>
               </div>
             </div>
@@ -222,7 +220,7 @@ export default function ClubPage() {
                 <Mail size={18} className="text-cyan-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 font-bold">البريد الإلكتروني</p>
+                <p className="text-xs text-gray-400 font-bold">{t.clubPage.emailLabel}</p>
                 <p className="text-sm font-black text-[#21166A] mt-0.5">{club.email}</p>
               </div>
             </div>
@@ -232,7 +230,7 @@ export default function ClubPage() {
                 <BookOpen size={18} className="text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs text-gray-400 font-bold">الكلية</p>
+                <p className="text-xs text-gray-400 font-bold">{t.clubPage.collegeLabel}</p>
                 <p className="text-sm font-black text-[#21166A] mt-0.5">{club.college}</p>
               </div>
             </div>
@@ -245,7 +243,7 @@ export default function ClubPage() {
                 <div className="w-8 h-8 rounded-xl bg-purple-50 flex items-center justify-center">
                   <BookOpen size={15} className="text-[#7C3AED]" />
                 </div>
-                <h2 className="text-base font-black text-[#21166A]">نبذة عن النادي</h2>
+                <h2 className="text-base font-black text-[#21166A]">{t.clubPage.about}</h2>
               </div>
               <p className="text-sm leading-8 text-gray-600">{club.description}</p>
             </section>
@@ -255,7 +253,7 @@ export default function ClubPage() {
                 <div className="w-8 h-8 rounded-xl bg-cyan-50 flex items-center justify-center">
                   <Target size={15} className="text-cyan-600" />
                 </div>
-                <h2 className="text-base font-black text-[#21166A]">أهداف النادي</h2>
+                <h2 className="text-base font-black text-[#21166A]">{t.clubPage.goals}</h2>
               </div>
               <ul className="space-y-3">
                 {club.goals?.split("\n").map((goal, i) => (
@@ -272,7 +270,7 @@ export default function ClubPage() {
                 <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center">
                   <Trophy size={15} className="text-amber-500" />
                 </div>
-                <h2 className="text-base font-black text-[#21166A]">أعمال وإنجازات النادي</h2>
+                <h2 className="text-base font-black text-[#21166A]">{t.clubPage.achievements}</h2>
               </div>
               <p className="text-sm leading-8 text-gray-600">{club.achievements}</p>
             </section>

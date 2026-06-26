@@ -1,6 +1,7 @@
 // app/layout.tsx
 
 import { AuthProvider } from "@/features/auth/context/AuthContext";
+import { LanguageProvider } from "@/features/i18n/context/LanguageContext";
 
 import type { Metadata } from "next";
 
@@ -10,7 +11,7 @@ import "./globals.css";
 
 const alexandria = Alexandria({
 
-  subsets: ["arabic"],
+  subsets: ["arabic", "latin"],
 
   weight: [
     "300",
@@ -24,10 +25,10 @@ const alexandria = Alexandria({
 
 export const metadata: Metadata = {
 
-  title: "لفيف",
+  title: "Lafif",
 
   description:
-    "منصة الأندية الجامعية الذكية",
+    "University Clubs Platform",
 
 };
 
@@ -41,6 +42,7 @@ export default function RootLayout({
 
   return (
 
+    // lang/dir are set dynamically by LanguageProvider via useEffect
     <html
       lang="ar"
       dir="rtl"
@@ -56,12 +58,11 @@ export default function RootLayout({
           overflow-x-hidden
         `}
       >
-
-
-        <AuthProvider>
-        {children}
-        </AuthProvider>
-
+        <LanguageProvider>
+          <AuthProvider>
+            {children}
+          </AuthProvider>
+        </LanguageProvider>
       </body>
 
     </html>

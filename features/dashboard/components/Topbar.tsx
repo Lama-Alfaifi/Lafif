@@ -4,22 +4,24 @@ import Link from "next/link";
 import { Bell, Search } from "lucide-react";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import useNotifications from "@/features/notifications/hooks/useNotifications";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 export default function Topbar() {
-  const { profile } = useAuth();
+  const { profile }     = useAuth();
   const { unreadCount } = useNotifications();
+  const { t, dir }      = useLanguage();
 
-  const firstName = profile?.name?.split(" ")[0] ?? "بك";
+  const firstName = profile?.name?.split(" ")[0] ?? "";
 
   return (
     <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-      <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
+      <div className="px-8 py-4 flex items-center justify-between" dir={dir}>
         <div>
           <h1 className="text-xl font-black text-[#21166A]">
-            أهلاً {firstName} 👋
+            {t.dashboard.greeting} {firstName} 👋
           </h1>
           <p className="text-sm text-gray-400 mt-0.5 font-medium">
-            اكتشف فعاليات وأندية جامعتك
+            {t.dashboard.subtitle}
           </p>
         </div>
 
@@ -27,9 +29,9 @@ export default function Topbar() {
           <div className="hidden md:flex items-center gap-2 bg-[#F7F5FF] px-4 py-2.5 rounded-2xl border border-gray-100">
             <Search size={16} className="text-gray-400 shrink-0" />
             <input
-              placeholder="ابحث..."
-              className="outline-none bg-transparent text-sm w-[140px] text-right"
-              dir="rtl"
+              placeholder={t.dashboard.search}
+              className="outline-none bg-transparent text-sm w-[140px]"
+              dir={dir}
             />
           </div>
 

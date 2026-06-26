@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import Link from "next/link";
 import {
   Users, CalendarDays, Sparkles, BarChart3,
@@ -121,10 +121,8 @@ const CONTENT = {
   },
 };
 
-type Lang = "ar" | "en";
-
 export default function LandingPage() {
-  const [lang, setLang] = useState<Lang>("ar");
+  const { lang, setLang } = useLanguage();
   const t = CONTENT[lang];
   const isRTL = t.dir === "rtl";
 
@@ -139,7 +137,7 @@ export default function LandingPage() {
           <nav className="flex items-center gap-2">
             {/* Language toggle */}
             <button
-              onClick={() => setLang(lang === "ar" ? "en" : "ar")}
+              onClick={() => setLang(lang === "ar" ? "en" : "ar" as "ar" | "en")}
               className="flex items-center gap-1.5 px-3 py-2 rounded-2xl text-xs font-bold text-gray-500 hover:bg-[#EFE8F7] hover:text-[#21166A] transition border border-gray-100"
             >
               <Globe size={13} />
