@@ -14,7 +14,7 @@ import {
 
 import {
   doc,
-  getDoc,
+  onSnapshot,
 } from "firebase/firestore";
 
 import { auth, db } from "@/src/lib/firebase";
@@ -43,34 +43,42 @@ export function AuthProvider({
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      async (currentUser) => {
-        setUser(currentUser);
+    let unsubscribeProfile: (() => void) | null = null;
 
-        if (!currentUser) {
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+      // Tear down previous profile listener when user changes
+      unsubscribeProfile?.();
+      unsubscribeProfile = null;
 
-        const userRef = doc(db, "users", currentUser.uid);
-        const userSnap = await getDoc(userRef);
+      setUser(currentUser);
 
-        if (userSnap.exists()) {
-          setProfile(userSnap.data() as UserProfile);
-        } else {
-          setProfile({
-            role: "member",
-            email: currentUser.email || "",
-          });
-        }
-
+      if (!currentUser) {
+        setProfile(null);
         setLoading(false);
+        return;
       }
-    );
 
-    return () => unsubscribe();
+      // Real-time listener — profile updates instantly when another user edits it
+      unsubscribeProfile = onSnapshot(
+        doc(db, "users", currentUser.uid),
+        (snap) => {
+          if (snap.exists()) {
+            setProfile(snap.data() as UserProfile);
+          } else {
+            setProfile({ role: "member", email: currentUser.email || "" });
+          }
+          setLoading(false);
+        },
+        () => {
+          setLoading(false);
+        }
+      );
+    });
+
+    return () => {
+      unsubscribeAuth();
+      unsubscribeProfile?.();
+    };
   }, []);
 
   return (
