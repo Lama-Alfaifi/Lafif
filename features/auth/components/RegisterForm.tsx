@@ -69,6 +69,22 @@ export default function RegisterForm() {
       const universityDoc = universitySnapshot.docs[0];
       const universityData = universityDoc.data();
 
+      // Read universityId from an explicit field first, fall back to doc ID
+      const resolvedUniversityId: string =
+        (universityData.universityId as string) ||
+        universityDoc.id;
+
+      // Accept both "name" and "universityName" field spellings
+      const resolvedUniversityName: string =
+        (universityData.name as string) ||
+        (universityData.universityName as string) ||
+        "";
+
+      if (!resolvedUniversityId) {
+        setErr("بيانات الجامعة غير مكتملة، تواصل مع الإدارة.");
+        return;
+      }
+
       const userCredential =
         await createUserWithEmailAndPassword(
           auth,
@@ -86,8 +102,8 @@ export default function RegisterForm() {
           name: fullName,
           email: email.trim(),
           role: "student",
-          universityId: universityDoc.id,
-          universityName: universityData.name,
+          universityId: resolvedUniversityId,
+          universityName: resolvedUniversityName,
           emailVerified: false,
           createdAt: new Date(),
         }
