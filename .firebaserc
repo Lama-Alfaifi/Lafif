@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "firebase functions:secrets:set OPENAI_API_KEY": "lafif-f1518"
+  },
+  "targets": {},
+  "etags": {}
+}

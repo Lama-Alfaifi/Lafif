@@ -1,55 +1,27 @@
-import OpenAI
-from "openai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const openai =
-  new OpenAI({
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
 
-    apiKey:
-    process.env.OPENAI_API_KEY,
-
-  });
-
-export async function POST(
-  request: Request
-) {
-
+export async function POST(request: Request) {
   try {
+    const body = await request.json() as { club?: string; category?: string };
+    const { club, category } = body;
 
-    const body =
-      await request.json();
+    const model = genAI.getGenerativeModel({
+      model: "gemini-2.0-flash",
+      generationConfig: {
+        responseMimeType: "application/json",
+        temperature: 0.8,
+      },
+    });
 
-    const {
+    const prompt = `أنت AI متخصص في إنشاء تحديات جامعية ذكية.
 
-      club,
+أنشئ تحدياً أسبوعياً مناسباً للنادي التالي:
+- اسم النادي: ${club ?? ""}
+- التصنيف: ${category ?? ""}
 
-      category,
-
-    } = body;
-
-    const prompt = `
-
-أنت AI ذكي داخل منصة جامعية.
-
-قم بإنشاء تحدي أسبوعي مناسب للنادي التالي:
-
-اسم النادي:
-${club}
-
-التصنيف:
-${category}
-
-أعطني:
-
-1- عنوان التحدي
-2- وصف التحدي
-3- نوع التحدي
-4- مستوى الصعوبة
-5- عدد النقاط XP
-6- مدة التحدي
-7- الموعد النهائي
-
-أجب بصيغة JSON فقط بالشكل التالي:
-
+أعد JSON بهذا الهيكل الحرفي فقط:
 {
   "title": "",
   "description": "",
@@ -58,74 +30,14 @@ ${category}
   "points": 0,
   "duration": "",
   "deadline": ""
-}
+}`;
 
-`;
+    const result = await model.generateContent(prompt);
+    const data = result.response.text();
 
-    const completion =
-      await openai.chat.completions.create({
-
-        model:
-        "gpt-4o-mini",
-
-        messages: [
-
-          {
-            role: "system",
-
-            content:
-            "أنت AI متخصص في إنشاء تحديات جامعية ذكية.",
-
-          },
-
-          {
-            role: "user",
-
-            content:
-            prompt,
-
-          },
-
-        ],
-
-        temperature:
-        0.8,
-
-      });
-
-    const response =
-
-      completion
-      .choices[0]
-      .message
-      .content;
-
-    return Response.json({
-
-      success:
-      true,
-
-      data:
-      response,
-
-    });
-
+    return Response.json({ success: true, data });
+  } catch (error) {
+    console.error("[api/ai] error:", error);
+    return Response.json({ success: false, message: "AI Error" }, { status: 500 });
   }
-
-  catch (error) {
-
-    console.log(error);
-
-    return Response.json({
-
-      success:
-      false,
-
-      message:
-      "AI Error",
-
-    });
-
-  }
-
 }

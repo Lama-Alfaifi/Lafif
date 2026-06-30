@@ -1,68 +1,26 @@
-import openai
-from "./openai.service";
+import { getGeminiModel } from "./openai.service";
 
-export default async function
-challengeService(
-
+export default async function challengeService(
   clubName: string,
+  category: string
+): Promise<string | null> {
+  const model = getGeminiModel(0.8);
 
-  category: string,
+  const prompt = `أنت AI متخصص في إنشاء تحديات أكاديمية لطلاب الجامعات السعودية.
 
-) {
+أنشئ تحدياً أسبوعياً لنادي "${clubName}" في تخصص "${category}".
 
-  const prompt = `
+أعد JSON بهذا الهيكل الحرفي فقط:
+{
+  "title": "عنوان التحدي",
+  "description": "وصف التحدي بجملتين",
+  "challengeType": "quiz",
+  "difficulty": "متوسط",
+  "points": 100,
+  "duration": "60",
+  "deadline": ""
+}`;
 
-  أنت AI جامعي ذكي.
-
-  أنشئ تحديًا أسبوعيًا للنادي التالي:
-
-  اسم النادي:
-  ${clubName}
-
-  التخصص:
-  ${category}
-
-  المطلوب:
-  - عنوان التحدي
-  - وصف التحدي
-  - مستوى الصعوبة
-  - عدد النقاط
-
-  أعد النتيجة بصيغة JSON فقط.
-
-  `;
-
-  const response =
-    await openai.chat.completions.create({
-
-      model:
-      "gpt-4.1-mini",
-
-      messages: [
-
-        {
-          role:
-          "system",
-
-          content:
-          "أنت مولد تحديات جامعية ذكي",
-        },
-
-        {
-          role:
-          "user",
-
-          content:
-          prompt,
-        },
-
-      ],
-
-    });
-
-  return response
-    .choices[0]
-    .message
-    .content;
-
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }

@@ -10,11 +10,13 @@ import { onSchedule } from "firebase-functions/v2/scheduler";
 import { onCall, HttpsError } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import { logger } from "firebase-functions/v2";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 initializeApp();
 const db = getFirestore();
 
 const geminiApiKey = defineSecret("GEMINI_API_KEY");
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -35,64 +37,29 @@ interface GeneratedChallenge {
   questions: ChallengeQuestion[];
 }
 
-interface GeminiResponse {
-  candidates: {
-    content: { parts: { text: string }[] };
-    finishReason: string;
-  }[];
-  promptFeedback?: { blockReason?: string };
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Call Gemini REST API — returns parsed JSON string
-// Uses gemini-2.0-flash (free tier: 1500 req/day, 15 req/min)
+// HELPER: Call Gemini via @google/generative-ai SDK — returns raw text
+// gemini-2.0-flash free tier: 1500 req/day, 15 req/min
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function callGemini(
   apiKey: string,
   systemInstruction: string,
-  userPrompt: string,
-  maxTokens = 2048
+  userPrompt: string
 ): Promise<string> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-
-  const body = {
-    systemInstruction: {
-      parts: [{ text: systemInstruction }],
-    },
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: userPrompt }],
-      },
-    ],
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.0-flash",
+    systemInstruction,
     generationConfig: {
       responseMimeType: "application/json",
-      maxOutputTokens: maxTokens,
       temperature: 0.7,
     },
-  };
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
   });
 
-  if (!res.ok) {
-    const errText = await res.text();
-    throw new Error(`Gemini API error ${res.status}: ${errText}`);
-  }
-
-  const data = (await res.json()) as GeminiResponse;
-
-  if (data.promptFeedback?.blockReason) {
-    throw new Error(`Gemini blocked the request: ${data.promptFeedback.blockReason}`);
-  }
-
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const result = await model.generateContent(userPrompt);
+  const text = result.response.text();
   if (!text) throw new Error("Gemini returned an empty response");
-
   return text;
 }
 
@@ -134,7 +101,7 @@ async function generateChallengeWithAI(
 - جميع النصوص باللغة العربية
 - الأسئلة تناسب تخصص النادي بدقة`;
 
-  const raw = await callGemini(apiKey, system, user, 2048);
+  const raw = await callGemini(apiKey, system, user);
   const parsed = JSON.parse(raw) as GeneratedChallenge;
 
   if (!parsed.title || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
@@ -191,7 +158,7 @@ async function generateClubReport(
 
 قيم status المسموح بها فقط: "ممتاز" أو "جيد جداً" أو "جيد" أو "يحتاج تحسين"`;
 
-  const raw = await callGemini(apiKey, system, user, 1024);
+  const raw = await callGemini(apiKey, system, user);
   return JSON.parse(raw);
 }
 
