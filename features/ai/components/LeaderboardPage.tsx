@@ -37,10 +37,10 @@ export default function LeaderboardPage() {
   const [tab, setTab] = useState<Tab>("members");
 
   const { players, loading: playersLoading } = usePlayerLeaderboard();
-  const clubs = useLeaderboard() as {
-    id: string; name?: string; score?: number;
-    category?: string; college?: string;
-  }[];
+  const { clubs, loading: clubsLoading } = useLeaderboard() as {
+    clubs: { id: string; name?: string; score?: number; category?: string; college?: string }[];
+    loading: boolean;
+  };
 
   const myRank = players.findIndex((p) => p.userId === user?.uid) + 1;
 
@@ -230,12 +230,16 @@ export default function LeaderboardPage() {
                 </div>
 
                 <div className="p-4 space-y-2">
-                  {clubs.length === 0 ? (
-                    <div className="text-center py-8">
-                      <BarChart2 size={28} className="text-gray-200 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400 font-bold">{t.leaderboard.noClubsData}</p>
-                    </div>
-                  ) : clubs.map((club, i) => (
+                  {clubsLoading
+                    ? Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} />)
+                    : clubs.length === 0
+                    ? (
+                      <div className="text-center py-8">
+                        <BarChart2 size={28} className="text-gray-200 mx-auto mb-2" />
+                        <p className="text-sm text-gray-400 font-bold">{t.leaderboard.noClubsData}</p>
+                      </div>
+                    )
+                    : clubs.map((club, i) => (
                     <div
                       key={club.id}
                       className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-gray-50 hover:bg-[#F7F5FF] transition"

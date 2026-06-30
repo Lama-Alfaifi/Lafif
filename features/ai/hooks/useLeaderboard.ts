@@ -10,11 +10,13 @@ export default function useLeaderboard() {
   const { profile, loading: authLoading } = useAuth();
 
   const [clubs, setClubs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading || !profile?.universityId) return;
 
     async function fetchLeaderboard() {
+      setLoading(true);
       try {
         const q = query(
           collection(db, "clubs"),
@@ -24,17 +26,20 @@ export default function useLeaderboard() {
         const snapshot = await getDocs(q);
 
         const sorted = snapshot.docs
-          .map((doc) => ({ id: doc.id, ...doc.data() }))
-          .sort((a: any, b: any) => b.score - a.score);
+          .map((d) => ({ id: d.id, ...d.data() }))
+          // score defaults to 0 if never incremented
+          .sort((a: any, b: any) => (b.score ?? 0) - (a.score ?? 0));
 
         setClubs(sorted);
       } catch (error) {
-        console.error(error);
+        console.error("[useLeaderboard]", error);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchLeaderboard();
   }, [profile?.universityId, authLoading]);
 
-  return clubs;
+  return { clubs, loading };
 }

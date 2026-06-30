@@ -83,6 +83,15 @@ export async function submitChallenge(
     // non-critical
   }
 
+  // Accumulate score on the club doc (drives the clubs leaderboard)
+  try {
+    await updateDoc(doc(db, "clubs", clubId), {
+      score: increment(score),
+    });
+  } catch {
+    // non-critical — leaderboard still works via challengeSubmissions
+  }
+
   return { id: submissionId, ...payload };
 }
 

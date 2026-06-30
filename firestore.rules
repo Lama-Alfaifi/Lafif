@@ -81,7 +81,11 @@ service cloud.firestore {
       allow read: if sameUniversity(resource.data.universityId);
       allow create: if isUniversityAdmin(request.resource.data.universityId);
       allow update: if isUniversityAdmin(resource.data.universityId)
-                    || isClubLeader(clubId);
+                    || isClubLeader(clubId)
+                    // Members can increment only the score field (challenge submissions)
+                    || (signedIn()
+                        && sameUniversity(resource.data.universityId)
+                        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score']));
       allow delete: if isUniversityAdmin(resource.data.universityId);
     }
 
