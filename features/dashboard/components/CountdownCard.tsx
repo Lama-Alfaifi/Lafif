@@ -65,22 +65,7 @@ export default function CountdownCard() {
   }, []);
 
   return (
-    <div
-      className="
-        w-full
-        rounded-[20px]
-        bg-gradient-to-r
-        from-[#5B3DF5]
-        to-[#7B61FF]
-        px-6
-        py-3
-        text-white
-        shadow-lg
-        flex
-        items-center
-        justify-between
-      "
-    >
+    <div className="w-full rounded-[20px] bg-gradient-to-r from-[#5B3DF5] to-[#7B61FF] px-6 py-3 text-white shadow-lg flex items-center justify-between">
       <h1 className="text-base lg:text-lg font-bold">
         {t.dashboard.countdown}
       </h1>

@@ -8,56 +8,55 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function me() {
+    function myDoc() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
 
     function isSuperAdmin() {
-      return signedIn() && me().role == 'superAdmin';
+      return signedIn() && myDoc().role == 'superAdmin';
     }
 
     function isUniversityAdmin(uniId) {
       return signedIn()
-          && me().role == 'universityAdmin'
-          && me().universityId == uniId;
+          && myDoc().role == 'universityAdmin'
+          && myDoc().universityId == uniId;
     }
 
     function isPresidentOf(clubId) {
       return signedIn()
-          && me().role == 'president'
-          && me().clubId == clubId;
+          && myDoc().role == 'president'
+          && myDoc().clubId == clubId;
     }
 
     function isVPOf(clubId) {
       return signedIn()
-          && me().role == 'vicePresident'
-          && me().clubId == clubId;
+          && myDoc().role == 'vicePresident'
+          && myDoc().clubId == clubId;
     }
 
     function sameUniversity(uniId) {
-      return signedIn() && me().universityId == uniId;
+      return signedIn() && myDoc().universityId == uniId;
     }
 
     function isClubLeader(clubId) {
       return isPresidentOf(clubId) || isVPOf(clubId);
     }
 
+    function isAdmin() {
+      return isSuperAdmin() || signedIn() && myDoc().role == 'universityAdmin';
+    }
+
     // ─── /users ─────────────────────────────────────────────────────────────
 
     match /users/{userId} {
-      // Read: own doc, superAdmin, or universityAdmin of same university
       allow read: if signedIn() && (
         request.auth.uid == userId
         || isSuperAdmin()
         || isUniversityAdmin(resource.data.universityId)
       );
-
-      // Create: only the newly registered user creates their own doc
       allow create: if signedIn()
                     && request.auth.uid == userId
                     && request.resource.data.role == 'student';
-
-      // Update: own doc (limited fields), superAdmin, or universityAdmin
       allow update: if signedIn() && (
         (request.auth.uid == userId
           && !request.resource.data.diff(resource.data).affectedKeys()
@@ -102,17 +101,32 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid
         || isClubLeader(resource.data.clubId)
         || isUniversityAdmin(resource.data.universityId)
+        || isSuperAdmin()
       );
-
-      // Student submits their own request
       allow create: if signedIn()
                     && request.resource.data.userId == request.auth.uid
                     && sameUniversity(request.resource.data.universityId)
                     && request.resource.data.status == 'pending';
-
-      // Only president / VP / universityAdmin can change status
       allow update: if isClubLeader(resource.data.clubId)
                     || isUniversityAdmin(resource.data.universityId);
+    }
+
+    // ─── /positionRequests ───────────────────────────────────────────────────
+
+    match /positionRequests/{requestId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isClubLeader(resource.data.clubId)
+        || isUniversityAdmin(resource.data.universityId)
+        || isSuperAdmin()
+      );
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && sameUniversity(request.resource.data.universityId)
+                    && request.resource.data.status == 'pending';
+      allow update: if isClubLeader(resource.data.clubId)
+                    || isUniversityAdmin(resource.data.universityId)
+                    || isSuperAdmin();
     }
 
     // ─── /clubMembers ────────────────────────────────────────────────────────
@@ -148,7 +162,6 @@ service cloud.firestore {
     // ─── /notifications ──────────────────────────────────────────────────────
 
     match /notifications/{notificationId} {
-      // Users read and mark their own notifications
       allow read, update: if signedIn()
                            && resource.data.userId == request.auth.uid;
       // Written by Firebase Functions (Admin SDK bypasses rules)
@@ -161,6 +174,48 @@ service cloud.firestore {
       allow read: if sameUniversity(resource.data.universityId);
       allow create, update: if isClubLeader(request.resource.data.clubId)
                              && sameUniversity(request.resource.data.universityId);
+    }
+
+    // ─── /challengeSubmissions ───────────────────────────────────────────────
+
+    match /challengeSubmissions/{submissionId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isClubLeader(resource.data.clubId)
+        || isAdmin()
+      );
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid
+                    && sameUniversity(request.resource.data.universityId);
+      allow update: if resource.data.userId == request.auth.uid;
+    }
+
+    // ─── /clubReports ────────────────────────────────────────────────────────
+
+    match /clubReports/{clubId} {
+      // President of that club, universityAdmin, or superAdmin can read
+      allow read: if signedIn() && (
+        isPresidentOf(clubId)
+        || isVPOf(clubId)
+        || isAdmin()
+      );
+      // Written by Firebase Functions only
+      allow write: if false;
+    }
+
+    // ─── /supportTickets ─────────────────────────────────────────────────────
+
+    match /supportTickets/{ticketId} {
+      allow read: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isAdmin()
+      );
+      allow create: if signedIn()
+                    && request.resource.data.userId == request.auth.uid;
+      allow update: if signedIn() && (
+        resource.data.userId == request.auth.uid
+        || isAdmin()
+      );
     }
   }
 }
