@@ -1,87 +1,42 @@
-export default function
-analysisService() {
+import { getFunctions, httpsCallable } from "firebase/functions";
+import { getFirestore, doc, getDoc } from "firebase/firestore";
+import { app } from "@/src/lib/firebase";
 
-  const attendance =
-    Math.floor(
-      Math.random() * 100
-    ) + 50;
-
-  const engagement =
-    Math.floor(
-      Math.random() * 100
-    );
-
-  const completion =
-    Math.floor(
-      Math.random() * 100
-    );
-
-  const score =
-    Math.floor(
-
-      (
-        attendance +
-        engagement +
-        completion
-      ) / 3
-
-    );
-
-  let status =
-    "ممتاز";
-
-  let recommendation =
-    "استمر بنفس مستوى الأداء.";
-
-  if (score < 90) {
-
-    status =
-      "جيد جدًا";
-
-    recommendation =
-      "زيادة التفاعل عبر الجوائز والتحديات.";
-
-  }
-
-  if (score < 75) {
-
-    status =
-      "جيد";
-
-    recommendation =
-      "تحسين التسويق للفعاليات القادمة.";
-
-  }
-
-  if (score < 60) {
-
-    status =
-      "يحتاج تحسين";
-
-    recommendation =
-      "إضافة أنشطة تفاعلية وورش عمل.";
-
-  }
-
-  return {
-
-    score,
-
-    attendance,
-
-    engagement,
-
-    challengeCompletion:
-    completion,
-
-    insight: {
-
-      status,
-
-      recommendation,
-
-    },
-
+export interface ClubAIReport {
+  status: string;
+  summary: string;
+  strengths: string[];
+  weaknesses: string[];
+  recommendations: string[];
+  suggestedWorkshop: string;
+  stats?: {
+    eventCount: number;
+    memberCount: number;
+    avgAttendance: number;
+    completionRate: number;
+    avgScore: number;
   };
+  generatedAt?: { seconds: number };
+}
 
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24h
+
+export async function getClubReport(clubId: string): Promise<ClubAIReport> {
+  const db = getFirestore(app);
+
+  // Return cached report if fresh (< 24h old)
+  const cached = await getDoc(doc(db, "clubReports", clubId));
+  if (cached.exists()) {
+    const data = cached.data() as ClubAIReport;
+    const age = data.generatedAt
+      ? Date.now() - data.generatedAt.seconds * 1000
+      : Infinity;
+    if (age < CACHE_TTL_MS) return data;
+  }
+
+  // Call the Firebase Function to generate a fresh report
+  const functions = getFunctions(app, "us-central1");
+  const fn = httpsCallable<{ clubId: string }, ClubAIReport>(functions, "getClubAIReport");
+  const result = await fn({ clubId });
+  return result.data;
 }
