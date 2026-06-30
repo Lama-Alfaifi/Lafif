@@ -169,11 +169,10 @@ service cloud.firestore {
       // Club leaders and admins create notifications client-side
       // (no Firebase Functions / Blaze plan required)
       allow create: if signedIn() && (
-        isClubLeader(request.resource.data.clubId ?? "")
+        myDoc().role == 'president'
+        || myDoc().role == 'vicePresident'
         || isAdmin()
         || isSuperAdmin()
-        || myDoc().role == 'president'
-        || myDoc().role == 'vicePresident'
       );
     }
 
