@@ -24,9 +24,11 @@ import {
 
 import AuthLayout from "./AuthLayout";
 import Link from "next/link";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 export default function RegisterForm() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
@@ -48,7 +50,7 @@ export default function RegisterForm() {
       const emailDomain = email.trim().split("@")[1];
 
       if (!emailDomain) {
-        setErr("البريد الجامعي غير صالح");
+        setErr(t.auth.errBadEmail);
         return;
       }
 
@@ -62,7 +64,7 @@ export default function RegisterForm() {
       );
 
       if (universitySnapshot.empty) {
-        setErr("هذه الجامعة غير مدعومة حالياً");
+        setErr(t.auth.errUniNotSup);
         return;
       }
 
@@ -81,7 +83,7 @@ export default function RegisterForm() {
         "";
 
       if (!resolvedUniversityId) {
-        setErr("بيانات الجامعة غير مكتملة، تواصل مع الإدارة.");
+        setErr(t.auth.errUniData);
         return;
       }
 
@@ -109,9 +111,7 @@ export default function RegisterForm() {
         }
       );
 
-      setSuccess(
-        "تم إنشاء الحساب. تم إرسال رسالة تحقق إلى بريدك الجامعي، يرجى التحقق ثم تسجيل الدخول."
-      );
+      setSuccess(t.auth.successReg);
 
       setTimeout(() => {
         router.push("/login");
@@ -119,10 +119,10 @@ export default function RegisterForm() {
     } catch (error: any) {
       const msg =
         error?.code === "auth/email-already-in-use"
-          ? "هذا البريد مستخدم مسبقاً"
+          ? t.auth.errInUse
           : error?.code === "auth/weak-password"
-          ? "كلمة المرور ضعيفة، يجب أن تكون 6 أحرف على الأقل"
-          : "تعذر إنشاء الحساب، يرجى التحقق من البيانات";
+          ? t.auth.errWeakPw
+          : t.auth.errRegister;
 
       setErr(msg);
     } finally {
@@ -131,15 +131,12 @@ export default function RegisterForm() {
   }
 
   return (
-    <AuthLayout
-      title="إنشاء حساب"
-      subtitle="أنشئ حسابك للانضمام إلى منصة لفيف"
-    >
+    <AuthLayout title={t.auth.registerTitle} subtitle={t.auth.registerSub}>
       <form onSubmit={handleRegister} className="space-y-4">
         <div>
           <input
             type="text"
-            placeholder="الاسم الكامل"
+            placeholder={t.auth.namePh}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
@@ -163,7 +160,7 @@ export default function RegisterForm() {
         <div className="relative">
           <input
             type={showPw ? "text" : "password"}
-            placeholder="كلمة المرور"
+            placeholder={t.auth.passwordPh}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -175,7 +172,7 @@ export default function RegisterForm() {
             onClick={() => setShowPw((v) => !v)}
             className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[#4B5563] font-medium"
           >
-            {showPw ? "إخفاء" : "إظهار"}
+            {showPw ? t.auth.hide : t.auth.show}
           </button>
         </div>
 
@@ -196,19 +193,16 @@ export default function RegisterForm() {
           disabled={loading}
           className="w-full h-12 rounded-xl bg-[#22C55E] text-white text-base font-bold hover:opacity-90 transition disabled:opacity-60 shadow-sm mt-2"
         >
-          {loading ? "جارٍ إنشاء الحساب..." : "إنشاء الحساب"}
+          {loading ? t.auth.registering : t.auth.registerBtn}
         </button>
 
         <div
           className="text-center text-sm text-[#4B5563] font-medium mt-4"
           dir="rtl"
         >
-          لديك حساب بالفعل؟{" "}
-          <Link
-            href="/login"
-            className="text-[#2D248B] font-bold hover:underline"
-          >
-            تسجيل الدخول
+          {t.auth.hasAccount}{" "}
+          <Link href="/login" className="text-[#2D248B] font-bold hover:underline">
+            {t.auth.loginLink}
           </Link>
         </div>
       </form>

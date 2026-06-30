@@ -6,19 +6,11 @@ import { User, Building2, BookOpen, CheckCircle, ClipboardList, Mail, Medal } fr
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import { db } from "@/src/lib/firebase";
 import MyRequestsSection from "@/features/joinRequests/components/MyRequestsSection";
 import RequestPositionModal from "@/features/positions/components/RequestPositionModal";
 import { useMyPositionRequests } from "@/features/positions/hooks/usePositionRequests";
-
-const ROLE_LABEL: Record<string, string> = {
-  student:         "طالب",
-  member:          "عضو",
-  vicePresident:   "نائب الرئيس",
-  president:       "رئيس النادي",
-  universityAdmin: "مسؤول الجامعة",
-  superAdmin:      "مسؤول النظام",
-};
 
 const ROLE_COLOR: Record<string, string> = {
   student:         "bg-gray-100 text-gray-600",
@@ -29,21 +21,17 @@ const ROLE_COLOR: Record<string, string> = {
   superAdmin:      "bg-red-100 text-red-600",
 };
 
-type Tab = "info" | "requests";
-
-const STATUS_LABEL: Record<string, string> = {
-  pending:  "معلّق",
-  approved: "مقبول",
-  rejected: "مرفوض",
-};
 const STATUS_COLOR: Record<string, string> = {
   pending:  "bg-amber-50 text-amber-600",
   approved: "bg-emerald-50 text-emerald-600",
   rejected: "bg-red-50 text-red-500",
 };
 
+type Tab = "info" | "requests";
+
 export default function ProfilePage() {
   const { user, profile, loading } = useAuth();
+  const { t, dir } = useLanguage();
   const [tab, setTab] = useState<Tab>("info");
   const [name, setName] = useState(profile?.name ?? "");
   const [saving, setSaving] = useState(false);
@@ -77,7 +65,7 @@ export default function ProfilePage() {
   }
 
   const role      = profile?.role ?? "student";
-  const roleLabel = ROLE_LABEL[role] ?? role;
+  const roleLabel = t.roles[role as keyof typeof t.roles] ?? role;
   const roleColor = ROLE_COLOR[role] ?? "bg-gray-100 text-gray-600";
   const initial   = (profile?.name ?? "؟")[0];
 
@@ -87,14 +75,14 @@ export default function ProfilePage() {
 
         {/* Sticky page header */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-          <div className="px-8 py-4" dir="rtl">
-            <p className="text-xs font-bold text-[#7C3AED] mb-0.5">الحساب الشخصي</p>
-            <h1 className="text-xl font-black text-[#21166A]">ملفي الشخصي</h1>
+          <div className="px-8 py-4" dir={dir}>
+            <p className="text-xs font-bold text-[#7C3AED] mb-0.5">{t.profile.tag}</p>
+            <h1 className="text-xl font-black text-[#21166A]">{t.profile.title}</h1>
           </div>
         </header>
 
         <div className="flex-1 p-6 lg:p-8">
-          <div className="max-w-2xl" dir="rtl">
+          <div className="max-w-2xl" dir={dir}>
 
             {/* Profile hero card */}
             <div className="relative overflow-hidden bg-[#21166A] rounded-[28px] p-6 mb-6 shadow-xl shadow-purple-900/25">
@@ -126,7 +114,7 @@ export default function ProfilePage() {
                 }`}
               >
                 <User size={15} />
-                معلوماتي
+                {t.profile.myInfo}
               </button>
               <button
                 onClick={() => setTab("requests")}
@@ -137,7 +125,7 @@ export default function ProfilePage() {
                 }`}
               >
                 <ClipboardList size={15} />
-                طلباتي
+                {t.profile.myRequests}
               </button>
             </div>
 
@@ -148,14 +136,14 @@ export default function ProfilePage() {
                 <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
                   <div className="flex items-center gap-2 mb-4">
                     <User size={16} className="text-[#7C3AED]" />
-                    <h3 className="text-sm font-black text-[#21166A]">تعديل الاسم</h3>
+                    <h3 className="text-sm font-black text-[#21166A]">{t.profile.editName}</h3>
                   </div>
                   <div className="flex gap-3">
                     <input
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="الاسم الكامل"
+                      placeholder={t.profile.fullName}
                       className="flex-1 px-4 py-3 rounded-2xl border border-gray-200 text-sm font-bold text-[#21166A] outline-none focus:border-[#7C3AED] focus:ring-4 focus:ring-purple-100 transition"
                     />
                     <button
@@ -166,9 +154,9 @@ export default function ProfilePage() {
                       {saved ? (
                         <span className="flex items-center gap-1.5">
                           <CheckCircle size={14} />
-                          حُفظ
+                          {t.saved}
                         </span>
-                      ) : saving ? "..." : "حفظ"}
+                      ) : saving ? "..." : t.save}
                     </button>
                   </div>
                 </div>
@@ -178,7 +166,7 @@ export default function ProfilePage() {
                   <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
                     <div className="flex items-center gap-2 mb-2">
                       <Building2 size={15} className="text-cyan-600" />
-                      <span className="text-xs font-bold text-gray-400">الجامعة</span>
+                      <span className="text-xs font-bold text-gray-400">{t.profile.university}</span>
                     </div>
                     <p className="text-sm font-black text-[#21166A]">
                       {profile?.universityName ?? "—"}
@@ -188,10 +176,10 @@ export default function ProfilePage() {
                   <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
                     <div className="flex items-center gap-2 mb-2">
                       <BookOpen size={15} className="text-emerald-600" />
-                      <span className="text-xs font-bold text-gray-400">النادي</span>
+                      <span className="text-xs font-bold text-gray-400">{t.profile.club}</span>
                     </div>
                     <p className="text-sm font-black text-[#21166A]">
-                      {profile?.clubName ?? "لا يوجد نادي"}
+                      {profile?.clubName ?? t.profile.noClub}
                     </p>
                   </div>
                 </div>
@@ -199,7 +187,7 @@ export default function ProfilePage() {
                 <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
                   <div className="flex items-center gap-2 mb-2">
                     <Mail size={15} className="text-gray-400" />
-                    <span className="text-xs font-bold text-gray-400">البريد الإلكتروني</span>
+                    <span className="text-xs font-bold text-gray-400">{t.profile.email}</span>
                   </div>
                   <p className="text-sm font-bold text-gray-600">
                     {profile?.email ?? user?.email ?? "—"}
@@ -212,35 +200,38 @@ export default function ProfilePage() {
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <Medal size={15} className="text-[#7C3AED]" />
-                        <h3 className="text-sm font-black text-[#21166A]">طلب منصب</h3>
+                        <h3 className="text-sm font-black text-[#21166A]">{t.profile.requestPos}</h3>
                       </div>
                       <button
                         onClick={() => setShowPositionModal(true)}
                         className="px-4 py-2 rounded-2xl bg-[#21166A] text-white text-xs font-bold hover:opacity-90 transition"
                       >
-                        + طلب جديد
+                        {t.profile.newRequest}
                       </button>
                     </div>
 
                     {posRequests.length === 0 ? (
                       <p className="text-xs text-gray-400 font-bold text-center py-3">
-                        لم ترسل أي طلب منصب حتى الآن
+                        {t.profile.noRequests}
                       </p>
                     ) : (
                       <div className="space-y-2">
-                        {posRequests.map((r) => (
+                        {posRequests.map((r) => {
+                          const statusLabel = { pending: t.profile.statusPending, approved: t.profile.statusApproved, rejected: t.profile.statusRejected }[r.status] ?? r.status;
+                          return (
                           <div key={r.id} className="flex items-center justify-between bg-[#F7F5FF] rounded-2xl px-4 py-3">
                             <div>
                               <p className="text-xs font-black text-[#21166A]">
-                                {r.position === "vicePresident" ? "نائب الرئيس" : "رئيس النادي"}
+                                {r.position === "vicePresident" ? t.profile.vp : t.profile.pres}
                               </p>
                               <p className="text-[11px] text-gray-400 mt-0.5">{r.clubName}</p>
                             </div>
                             <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${STATUS_COLOR[r.status]}`}>
-                              {STATUS_LABEL[r.status]}
+                              {statusLabel}
                             </span>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>

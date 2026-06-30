@@ -1,6 +1,7 @@
 "use client";
 
 import { Zap } from "lucide-react";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 type AuthLayoutProps = {
   title: string;
@@ -9,19 +10,18 @@ type AuthLayoutProps = {
 };
 
 export default function AuthLayout({ title, subtitle, children }: AuthLayoutProps) {
+  const { t, dir } = useLanguage();
   return (
-    <main className="min-h-screen bg-[#F7F5FF] flex items-center justify-center p-6" dir="rtl">
-      {/* Background blobs */}
+    <main className="min-h-screen bg-[#F7F5FF] flex items-center justify-center p-6" dir={dir}>
       <div className="fixed -top-24 -right-24 w-[480px] h-[480px] rounded-full bg-purple-300/20 blur-3xl pointer-events-none" />
       <div className="fixed bottom-0 -left-20 w-[380px] h-[380px] rounded-full bg-emerald-200/15 blur-3xl pointer-events-none" />
 
       <div className="relative z-10 w-full max-w-md">
-        {/* Logo + badge */}
         <div className="text-center mb-8">
-          <span className="text-5xl font-black text-[#21166A]">لفيف</span>
+          <span className="text-5xl font-black text-[#21166A]">{t.auth.logo}</span>
           <div className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-purple-100 shadow-sm text-xs font-bold text-[#7C3AED]">
             <Zap size={12} />
-            منصة الأندية الجامعية
+            {t.auth.tagline}
           </div>
         </div>
 

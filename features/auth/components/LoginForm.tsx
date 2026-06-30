@@ -20,9 +20,11 @@ import {
 
 import AuthLayout from "./AuthLayout";
 import Link from "next/link";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 export default function LoginForm() {
   const router = useRouter();
+  const { t } = useLanguage();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -79,8 +81,8 @@ export default function LoginForm() {
     } catch (error: any) {
       const msg =
         error?.code === "auth/invalid-credential"
-          ? "بيانات الدخول غير صحيحة"
-          : "تعذر تسجيل الدخول";
+          ? t.auth.errInvalid
+          : t.auth.errLogin;
 
       setErr(msg);
     } finally {
@@ -89,10 +91,7 @@ export default function LoginForm() {
   }
 
   return (
-    <AuthLayout
-      title="تسجيل الدخول"
-      subtitle="سجّل دخولك للوصول إلى منصة لفيف"
-    >
+    <AuthLayout title={t.auth.loginTitle} subtitle={t.auth.loginSub}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <input
@@ -115,7 +114,7 @@ export default function LoginForm() {
                 ? "text"
                 : "password"
             }
-            placeholder="كلمة المرور"
+            placeholder={t.auth.passwordPh}
             value={password}
             onChange={(e) =>
               setPassword(e.target.value)
@@ -131,7 +130,7 @@ export default function LoginForm() {
             }
             className="absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[#4B5563] font-medium"
           >
-            {showPw ? "إخفاء" : "إظهار"}
+            {showPw ? t.auth.hide : t.auth.show}
           </button>
         </div>
 
@@ -150,14 +149,14 @@ export default function LoginForm() {
               type="checkbox"
               className="rounded text-purple-600"
             />
-            تذكرني
+            {t.auth.rememberMe}
           </label>
 
           <Link
             href="/reset"
             className="text-[#2D248B] font-bold hover:underline"
           >
-            نسيت كلمة المرور؟
+            {t.auth.forgotPw}
           </Link>
         </div>
 
@@ -166,21 +165,16 @@ export default function LoginForm() {
           disabled={loading}
           className="w-full h-12 rounded-xl bg-[#22C55E] text-white text-base font-bold hover:opacity-90 transition disabled:opacity-60 shadow-sm"
         >
-          {loading
-            ? "جارٍ الدخول..."
-            : "تسجيل الدخول"}
+          {loading ? t.auth.loggingIn : t.auth.loginBtn}
         </button>
 
         <div
           className="text-center text-xs text-[#4B5563] font-medium pt-2"
           dir="rtl"
         >
-          ليس لديك حساب؟{" "}
-          <Link
-            href="/register"
-            className="text-[#2D248B] font-bold hover:underline"
-          >
-            إنشاء حساب
+          {t.auth.noAccount}{" "}
+          <Link href="/register" className="text-[#2D248B] font-bold hover:underline">
+            {t.auth.registerLink}
           </Link>
         </div>
       </form>

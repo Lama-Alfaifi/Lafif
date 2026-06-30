@@ -3,41 +3,51 @@
 import { CheckCheck, BellOff, Bell } from "lucide-react";
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import useNotifications from "../hooks/useNotifications";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import type { Notification } from "../types/notification.types";
 
-const TYPE_CONFIG: Record<
-  Notification["type"],
-  { label: string; color: string; dot: string }
-> = {
-  "join-approved":    { label: "انضمام مقبول",  color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  "join-rejected":    { label: "انضمام مرفوض",  color: "bg-red-100 text-red-600",         dot: "bg-red-500" },
-  "president-assigned": { label: "تعيين رئيس", color: "bg-purple-100 text-purple-700",   dot: "bg-purple-500" },
-  general:            { label: "عام",           color: "bg-gray-100 text-gray-600",       dot: "bg-gray-400" },
-};
-
-function timeAgo(ts?: { seconds: number } | null): string {
+function timeAgo(
+  ts?: { seconds: number } | null,
+  t?: { now: string; minAgo: string; hourAgo: string; dayAgo: string; timeAgo: string }
+): string {
   if (!ts) return "";
   const diff = Math.floor(Date.now() / 1000 - ts.seconds);
-  if (diff < 60)    return "الآن";
-  if (diff < 3600)  return `منذ ${Math.floor(diff / 60)} دقيقة`;
-  if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} ساعة`;
-  return `منذ ${Math.floor(diff / 86400)} يوم`;
+  if (!t) {
+    if (diff < 60)    return "الآن";
+    if (diff < 3600)  return `منذ ${Math.floor(diff / 60)} دقيقة`;
+    if (diff < 86400) return `منذ ${Math.floor(diff / 3600)} ساعة`;
+    return `منذ ${Math.floor(diff / 86400)} يوم`;
+  }
+  if (diff < 60)    return t.now;
+  if (diff < 3600)  return t.minAgo.replace("{n}", String(Math.floor(diff / 60)));
+  if (diff < 86400) return t.hourAgo.replace("{n}", String(Math.floor(diff / 3600)));
+  return t.dayAgo.replace("{n}", String(Math.floor(diff / 86400)));
 }
 
 export default function NotificationsPage() {
   const { notifications, loading, unreadCount, markAsRead, markAllAsRead } =
     useNotifications();
+  const { t, dir } = useLanguage();
+
+  const TYPE_CONFIG: Record<
+    Notification["type"],
+    { label: string; color: string; dot: string }
+  > = {
+    "join-approved":      { label: t.notifications.typeApproved,  color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
+    "join-rejected":      { label: t.notifications.typeRejected,  color: "bg-red-100 text-red-600",         dot: "bg-red-500" },
+    "president-assigned": { label: t.notifications.typePresident, color: "bg-purple-100 text-purple-700",   dot: "bg-purple-500" },
+    general:              { label: t.notifications.typeGeneral,   color: "bg-gray-100 text-gray-600",       dot: "bg-gray-400" },
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F7F5FF]">
       <div className="flex-1 min-w-0 flex flex-col">
 
-        {/* Sticky page header */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-          <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
+          <div className="px-8 py-4 flex items-center justify-between" dir={dir}>
             <div>
-              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">البريد الوارد</p>
-              <h1 className="text-xl font-black text-[#21166A]">الإشعارات</h1>
+              <p className="text-xs font-bold text-[#7C3AED] mb-0.5">{t.notifications.inbox}</p>
+              <h1 className="text-xl font-black text-[#21166A]">{t.nav.notifications}</h1>
             </div>
 
             {unreadCount > 0 && (
@@ -46,7 +56,7 @@ export default function NotificationsPage() {
                 className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-[#EFE8F7] text-sm font-bold text-[#21166A] hover:bg-[#E0D8F5] transition"
               >
                 <CheckCheck size={15} />
-                تحديد الكل كمقروء
+                {t.notifications.markAllRead}
               </button>
             )}
           </div>
@@ -54,30 +64,29 @@ export default function NotificationsPage() {
 
         <div className="flex-1 p-6 lg:p-8">
 
-          {/* Unread badge */}
           {unreadCount > 0 && (
             <div
               className="mb-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-purple-100 shadow-sm text-xs font-bold text-[#7C3AED]"
-              dir="rtl"
+              dir={dir}
             >
               <Bell size={12} />
-              {unreadCount} إشعار غير مقروء
+              {t.notifications.unreadBadge.replace("{n}", String(unreadCount))}
             </div>
           )}
 
           {loading ? (
             <div className="flex items-center justify-center py-24">
-              <p className="font-bold text-[#21166A]">جاري تحميل الإشعارات...</p>
+              <p className="font-bold text-[#21166A]">{t.notifications.loading}</p>
             </div>
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-24 gap-4 text-center">
               <div className="w-16 h-16 rounded-[24px] bg-white shadow-md flex items-center justify-center">
                 <BellOff size={24} className="text-[#7C3AED]" />
               </div>
-              <p className="text-sm font-bold text-gray-400">لا توجد إشعارات حتى الآن</p>
+              <p className="text-sm font-bold text-gray-400">{t.notifications.empty}</p>
             </div>
           ) : (
-            <div className="max-w-2xl space-y-3" dir="rtl">
+            <div className="max-w-2xl space-y-3" dir={dir}>
               {notifications.map((n) => {
                 const cfg = TYPE_CONFIG[n.type] ?? TYPE_CONFIG.general;
                 return (
@@ -105,7 +114,7 @@ export default function NotificationsPage() {
                           {cfg.label}
                         </span>
                         <span className="text-xs text-gray-400 shrink-0">
-                          {timeAgo(n.createdAt)}
+                          {timeAgo(n.createdAt, t.notifications)}
                         </span>
                       </div>
                       <h3 className="text-sm font-black text-[#21166A] leading-5">{n.title}</h3>

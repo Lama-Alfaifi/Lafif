@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Trophy, Star, Zap, Users, BarChart2, Medal } from "lucide-react";
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import usePlayerLeaderboard from "../hooks/usePlayerLeaderboard";
 import useLeaderboard from "../hooks/useLeaderboard";
 
@@ -32,6 +33,7 @@ function SkeletonRow() {
 
 export default function LeaderboardPage() {
   const { user, profile } = useAuth();
+  const { t, dir } = useLanguage();
   const [tab, setTab] = useState<Tab>("members");
 
   const { players, loading: playersLoading } = usePlayerLeaderboard();
@@ -46,9 +48,8 @@ export default function LeaderboardPage() {
     <div className="flex min-h-screen bg-[#F7F5FF]">
       <div className="flex-1 min-w-0 flex flex-col">
 
-        {/* Sticky header */}
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-100 shadow-sm">
-          <div className="px-8 py-4 flex items-center justify-between" dir="rtl">
+          <div className="px-8 py-4 flex items-center justify-between" dir={dir}>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-[14px] bg-[#EFE8F7] flex items-center justify-center shrink-0">
                 <Trophy size={18} className="text-[#7C3AED]" />
@@ -57,11 +58,10 @@ export default function LeaderboardPage() {
                 <p className="text-xs font-bold text-[#7C3AED] mb-0.5">
                   {profile?.universityName}
                 </p>
-                <h1 className="text-xl font-black text-[#21166A]">لوحة الترتيب</h1>
+                <h1 className="text-xl font-black text-[#21166A]">{t.leaderboard.title}</h1>
               </div>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2">
               <button
                 onClick={() => setTab("members")}
@@ -72,7 +72,7 @@ export default function LeaderboardPage() {
                 }`}
               >
                 <Users size={13} />
-                ترتيب الأعضاء
+                {t.leaderboard.membersTab}
               </button>
               <button
                 onClick={() => setTab("clubs")}
@@ -83,34 +83,32 @@ export default function LeaderboardPage() {
                 }`}
               >
                 <BarChart2 size={13} />
-                ترتيب الأندية
+                {t.leaderboard.clubsTab}
               </button>
             </div>
           </div>
         </header>
 
-        <div className="flex-1 p-6 lg:p-8" dir="rtl">
+        <div className="flex-1 p-6 lg:p-8" dir={dir}>
           <div className="max-w-2xl mx-auto space-y-5">
 
-            {/* ── Members tab ──────────────────────────────────────── */}
             {tab === "members" && (
               <>
-                {/* My rank card */}
                 {myRank > 0 && (
                   <div className="relative overflow-hidden bg-[#21166A] rounded-[24px] p-5 shadow-xl shadow-purple-900/20">
                     <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full bg-purple-400/20 blur-3xl pointer-events-none" />
                     <div className="relative z-10 flex items-center justify-between">
                       <div>
-                        <p className="text-white/50 text-xs font-bold mb-1">ترتيبك الحالي</p>
+                        <p className="text-white/50 text-xs font-bold mb-1">{t.leaderboard.yourCurRank}</p>
                         <div className="flex items-baseline gap-2">
                           <span className="text-4xl font-black text-white">#{myRank}</span>
                           <span className="text-white/60 text-sm font-bold">
-                            من {players.length} مشارك
+                            {t.leaderboard.ofParticipants.replace("{n}", String(players.length))}
                           </span>
                         </div>
                       </div>
                       <div className="text-left">
-                        <p className="text-white/50 text-xs font-bold mb-1">مجموع نقاطك</p>
+                        <p className="text-white/50 text-xs font-bold mb-1">{t.leaderboard.yourScore}</p>
                         <div className="flex items-center gap-1.5">
                           <Zap size={16} className="text-amber-400" />
                           <span className="text-2xl font-black text-white">
@@ -123,7 +121,6 @@ export default function LeaderboardPage() {
                   </div>
                 )}
 
-                {/* Top 3 podium */}
                 {!playersLoading && players.length >= 3 && (
                   <div className="grid grid-cols-3 gap-3">
                     {[players[1], players[0], players[2]].map((p, col) => {
@@ -154,13 +151,12 @@ export default function LeaderboardPage() {
                   </div>
                 )}
 
-                {/* Full list */}
                 <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
                   <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
                     <Medal size={15} className="text-[#7C3AED]" />
-                    <h2 className="text-sm font-black text-[#21166A]">الترتيب الكامل</h2>
+                    <h2 className="text-sm font-black text-[#21166A]">{t.leaderboard.fullRanking}</h2>
                     <span className="mr-auto text-xs text-gray-400 font-bold">
-                      {players.length} مشارك
+                      {players.length} {t.leaderboard.participant}
                     </span>
                   </div>
 
@@ -171,12 +167,8 @@ export default function LeaderboardPage() {
                       ? (
                         <div className="text-center py-8">
                           <Trophy size={28} className="text-gray-200 mx-auto mb-2" />
-                          <p className="text-sm text-gray-400 font-bold">
-                            لا يوجد مشاركون بعد
-                          </p>
-                          <p className="text-xs text-gray-300 mt-1">
-                            أجب على التحدي الأسبوعي لتظهر هنا
-                          </p>
+                          <p className="text-sm text-gray-400 font-bold">{t.leaderboard.noData}</p>
+                          <p className="text-xs text-gray-300 mt-1">{t.leaderboard.noDataSub}</p>
                         </div>
                       )
                       : players.map((p, i) => {
@@ -190,29 +182,25 @@ export default function LeaderboardPage() {
                                 : "bg-gray-50 hover:bg-[#F7F5FF]"
                             }`}
                           >
-                            {/* Rank */}
                             <span className={`w-8 h-8 rounded-xl text-xs font-black flex items-center justify-center shrink-0 ${
                               RANK_STYLE[i] ?? "bg-gray-100 text-gray-500"
                             }`}>
                               {i < 3 ? RANK_ICON[i] : i + 1}
                             </span>
 
-                            {/* Avatar */}
                             <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#21166A] to-[#7C3AED] text-white text-xs font-black flex items-center justify-center shrink-0">
                               {p.userName[0]}
                             </div>
 
-                            {/* Info */}
                             <div className="flex-1 min-w-0">
                               <p className={`text-sm font-black truncate ${isMe ? "text-[#21166A]" : "text-gray-700"}`}>
-                                {isMe ? `${p.userName} (أنت)` : p.userName}
+                                {isMe ? `${p.userName} (${t.leaderboard.you})` : p.userName}
                               </p>
                               <p className="text-[10px] text-gray-400 font-bold">
-                                {p.clubName} · {p.challengeCount} تحدي · دقة {p.avgAccuracy}%
+                                {p.clubName} · {p.challengeCount} {t.leaderboard.challenges} · {t.leaderboard.accuracy} {p.avgAccuracy}%
                               </p>
                             </div>
 
-                            {/* Score */}
                             <div className="text-left shrink-0">
                               <div className="flex items-center gap-1">
                                 <Zap size={12} className="text-amber-500" />
@@ -231,14 +219,13 @@ export default function LeaderboardPage() {
               </>
             )}
 
-            {/* ── Clubs tab ─────────────────────────────────────────── */}
             {tab === "clubs" && (
               <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
                 <div className="px-5 py-4 border-b border-gray-50 flex items-center gap-2">
                   <Star size={15} className="text-amber-500" />
-                  <h2 className="text-sm font-black text-[#21166A]">ترتيب الأندية</h2>
+                  <h2 className="text-sm font-black text-[#21166A]">{t.leaderboard.clubsTab}</h2>
                   <span className="mr-auto text-xs text-gray-400 font-bold">
-                    {clubs.length} نادي
+                    {clubs.length} {t.leaderboard.club}
                   </span>
                 </div>
 
@@ -246,7 +233,7 @@ export default function LeaderboardPage() {
                   {clubs.length === 0 ? (
                     <div className="text-center py-8">
                       <BarChart2 size={28} className="text-gray-200 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400 font-bold">لا توجد بيانات</p>
+                      <p className="text-sm text-gray-400 font-bold">{t.leaderboard.noClubsData}</p>
                     </div>
                   ) : clubs.map((club, i) => (
                     <div
@@ -264,7 +251,7 @@ export default function LeaderboardPage() {
                           {club.name}
                         </p>
                         <p className="text-[10px] text-gray-400 font-bold">
-                          {club.college ?? "—"} · {club.category === "central" ? "مركزي" : "لامركزي"}
+                          {club.college ?? "—"} · {club.category === "central" ? t.leaderboard.central : t.leaderboard.decentralized}
                         </p>
                       </div>
 
@@ -272,7 +259,7 @@ export default function LeaderboardPage() {
                         <p className="text-sm font-black text-emerald-600">
                           {club.score ?? 0}
                         </p>
-                        <p className="text-[10px] text-gray-400 text-left">نقطة</p>
+                        <p className="text-[10px] text-gray-400 text-left">{t.leaderboard.points}</p>
                       </div>
                     </div>
                   ))}
