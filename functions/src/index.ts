@@ -14,7 +14,7 @@ import { logger } from "firebase-functions/v2";
 initializeApp();
 const db = getFirestore();
 
-const openaiApiKey = defineSecret("OPENAI_API_KEY");
+const geminiApiKey = defineSecret("GEMINI_API_KEY");
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -35,47 +35,69 @@ interface GeneratedChallenge {
   questions: ChallengeQuestion[];
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Call OpenAI and parse JSON safely
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function callOpenAI(
-  apiKey: string,
-  systemPrompt: string,
-  userPrompt: string,
-  maxTokens = 2000
-): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-      max_tokens: maxTokens,
-      temperature: 0.7,
-      response_format: { type: "json_object" },
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`OpenAI API error ${res.status}: ${err}`);
-  }
-
-  const data = (await res.json()) as {
-    choices: { message: { content: string } }[];
-  };
-  return data.choices[0].message.content;
+interface GeminiResponse {
+  candidates: {
+    content: { parts: { text: string }[] };
+    finishReason: string;
+  }[];
+  promptFeedback?: { blockReason?: string };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Generate one challenge via OpenAI
+// HELPER: Call Gemini REST API — returns parsed JSON string
+// Uses gemini-2.0-flash (free tier: 1500 req/day, 15 req/min)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function callGemini(
+  apiKey: string,
+  systemInstruction: string,
+  userPrompt: string,
+  maxTokens = 2048
+): Promise<string> {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+  const body = {
+    systemInstruction: {
+      parts: [{ text: systemInstruction }],
+    },
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: userPrompt }],
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      maxOutputTokens: maxTokens,
+      temperature: 0.7,
+    },
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`Gemini API error ${res.status}: ${errText}`);
+  }
+
+  const data = (await res.json()) as GeminiResponse;
+
+  if (data.promptFeedback?.blockReason) {
+    throw new Error(`Gemini blocked the request: ${data.promptFeedback.blockReason}`);
+  }
+
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini returned an empty response");
+
+  return text;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPER: Generate one weekly challenge via Gemini
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateChallengeWithAI(
@@ -83,13 +105,13 @@ async function generateChallengeWithAI(
   clubName: string,
   category: string
 ): Promise<GeneratedChallenge> {
-  const systemPrompt = `أنت متخصص في إنشاء تحديات أكاديمية لطلاب الجامعات السعودية.
+  const system = `أنت متخصص في إنشاء تحديات أكاديمية لطلاب الجامعات السعودية.
 تُنشئ أسئلة MCQ عالية الجودة تناسب مستوى الجامعة.
-أجب دائماً بـ JSON صحيح فقط بدون أي نص إضافي.`;
+أجب دائماً بـ JSON صحيح فقط وفق الهيكل المطلوب بدون أي نص إضافي.`;
 
-  const userPrompt = `أنشئ تحدياً أسبوعياً لنادي "${clubName}" في تخصص "${category}".
+  const user = `أنشئ تحدياً أسبوعياً لنادي "${clubName}" في تخصص "${category}".
 
-المطلوب: كائن JSON بهذا الهيكل الحرفي:
+أعد كائن JSON بهذا الهيكل الحرفي بالضبط:
 {
   "title": "عنوان التحدي (جملة قصيرة جذابة)",
   "description": "وصف التحدي بجملتين",
@@ -109,22 +131,21 @@ async function generateChallengeWithAI(
 - 5 أسئلة متنوعة متدرجة الصعوبة
 - difficulty: اختر من ("سهل" أو "متوسط" أو "صعب")
 - correct: رقم من 0 إلى 3 يشير لفهرس الإجابة الصحيحة في options
-- الأسئلة باللغة العربية
-- تناسب تخصص النادي بدقة`;
+- جميع النصوص باللغة العربية
+- الأسئلة تناسب تخصص النادي بدقة`;
 
-  const raw = await callOpenAI(apiKey, systemPrompt, userPrompt, 2000);
+  const raw = await callGemini(apiKey, system, user, 2048);
   const parsed = JSON.parse(raw) as GeneratedChallenge;
 
-  // Validate minimum structure
   if (!parsed.title || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
-    throw new Error("Invalid challenge structure returned by OpenAI");
+    throw new Error("Invalid challenge structure returned by Gemini");
   }
 
   return parsed;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// HELPER: Generate AI analysis report for a club
+// HELPER: Generate AI analysis report for a club via Gemini
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateClubReport(
@@ -145,11 +166,11 @@ async function generateClubReport(
   recommendations: string[];
   suggestedWorkshop: string;
 }> {
-  const systemPrompt = `أنت مستشار تطوير الأندية الطلابية في الجامعات السعودية.
-تُحلل بيانات الأندية وتقدم توصيات عملية ومحددة.
+  const system = `أنت مستشار تطوير الأندية الطلابية في الجامعات السعودية.
+تُحلل بيانات الأندية وتقدم توصيات عملية ومحددة وقابلة للتنفيذ.
 أجب دائماً بـ JSON صحيح فقط.`;
 
-  const userPrompt = `حلل بيانات نادي "${clubName}" وقدم تقريراً:
+  const user = `حلل بيانات نادي "${clubName}" وقدم تقريراً:
 
 البيانات:
 - عدد الفعاليات هذا الشهر: ${stats.eventCount}
@@ -158,22 +179,24 @@ async function generateClubReport(
 - نسبة إنجاز التحديات الأسبوعية: ${stats.challengeCompletionRate}%
 - متوسط درجات التحديات: ${stats.avgScore}/100
 
-المطلوب JSON بهذا الهيكل:
+أعد JSON بهذا الهيكل الحرفي:
 {
-  "status": "ممتاز | جيد جداً | جيد | يحتاج تحسين",
+  "status": "ممتاز",
   "summary": "ملخص أداء النادي في جملتين",
   "strengths": ["نقطة قوة 1", "نقطة قوة 2"],
   "weaknesses": ["نقطة ضعف 1", "نقطة ضعف 2"],
   "recommendations": ["توصية عملية 1", "توصية عملية 2", "توصية عملية 3"],
   "suggestedWorkshop": "اسم ورشة عمل مقترحة مناسبة للنادي"
-}`;
+}
 
-  const raw = await callOpenAI(apiKey, systemPrompt, userPrompt, 1000);
+قيم status المسموح بها فقط: "ممتاز" أو "جيد جداً" أو "جيد" أو "يحتاج تحسين"`;
+
+  const raw = await callGemini(apiKey, system, user, 1024);
   return JSON.parse(raw);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRIGGER: Join request status changed → promote user + notify
+// TRIGGER: Join request approved → promote user to member + notify
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const onJoinRequestUpdated = onDocumentUpdated(
@@ -267,25 +290,21 @@ export const onPositionRequestUpdated = onDocumentUpdated(
 
     const batch = db.batch();
 
-    batch.update(db.doc(`users/${userId}`), {
-      role: newRole,
-      clubId,
-      clubName,
-    });
+    batch.update(db.doc(`users/${userId}`), { role: newRole, clubId, clubName });
 
-    const titleMap = {
-      president: "تهانينا! تم تعيينك رئيساً للنادي",
+    const titles: Record<string, string> = {
+      president:     "تهانينا! تم تعيينك رئيساً للنادي",
       vicePresident: "تهانينا! تم تعيينك نائباً للرئيس",
     };
-    const msgMap = {
-      president: `تم تعيينك رئيساً لـ ${clubName}. يمكنك الآن إدارة النادي وإضافة الفعاليات.`,
+    const msgs: Record<string, string> = {
+      president:     `تم تعيينك رئيساً لـ ${clubName}. يمكنك الآن إدارة النادي وإضافة الفعاليات.`,
       vicePresident: `تم تعيينك نائب رئيس في ${clubName}. يمكنك الآن المساعدة في إدارة النادي.`,
     };
 
     batch.set(db.collection("notifications").doc(), {
       userId,
-      title: titleMap[position] ?? "تم قبول طلب المنصب",
-      message: msgMap[position] ?? `تم قبول طلبك في ${clubName}.`,
+      title: titles[position] ?? "تم قبول طلب المنصب",
+      message: msgs[position] ?? `تم قبول طلبك في ${clubName}.`,
       type: "president-assigned",
       isRead: false,
       createdAt: FieldValue.serverTimestamp(),
@@ -297,7 +316,7 @@ export const onPositionRequestUpdated = onDocumentUpdated(
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// TRIGGER: User role changed to president (direct assignment by admin)
+// TRIGGER: Direct president assignment by admin → notify
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const onPresidentAssigned = onDocumentUpdated(
@@ -310,10 +329,8 @@ export const onPresidentAssigned = onDocumentUpdated(
     if (before.role === after.role) return;
     if (after.role !== "president") return;
 
-    const userId = event.params.userId;
-
     await db.collection("notifications").add({
-      userId,
+      userId: event.params.userId,
       title: "تهانينا! تم تعيينك رئيساً للنادي",
       message: `تم تعيينك رئيساً لـ ${after.clubName}. يمكنك الآن إدارة النادي وإضافة الفعاليات.`,
       type: "president-assigned",
@@ -321,36 +338,39 @@ export const onPresidentAssigned = onDocumentUpdated(
       createdAt: FieldValue.serverTimestamp(),
     });
 
-    logger.info(`President assigned directly: user ${userId} → president of ${after.clubId}`);
+    logger.info(`President assigned: user ${event.params.userId} → ${after.clubId}`);
   }
 );
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SCHEDULED: Generate weekly AI challenges — every Monday 08:00 Riyadh time
+// Free tier: gemini-2.0-flash → 1500 req/day, 15 req/min
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const generateWeeklyChallenges = onSchedule(
   {
-    schedule: "0 5 * * 1",
+    schedule: "0 5 * * 1", // 08:00 Riyadh (UTC+3 = 05:00 UTC)
     timeZone: "Asia/Riyadh",
-    secrets: [openaiApiKey],
+    secrets: [geminiApiKey],
   },
   async () => {
-    const apiKey = openaiApiKey.value();
+    const apiKey = geminiApiKey.value();
     const weekKey = getWeekKey();
     logger.info(`Generating weekly challenges for week: ${weekKey}`);
 
     const clubsSnapshot = await db.collection("clubs").get();
+    logger.info(`Found ${clubsSnapshot.size} clubs`);
 
-    const tasks = clubsSnapshot.docs.map(async (clubDoc) => {
+    // Process clubs sequentially to respect rate limits (15 req/min)
+    for (const clubDoc of clubsSnapshot.docs) {
       const club = clubDoc.data();
       const docId = `${clubDoc.id}_${weekKey}`;
       const ref = db.doc(`challenges/${docId}`);
 
       const existing = await ref.get();
       if (existing.exists) {
-        logger.info(`Challenge already exists for club ${club.name}, skipping.`);
-        return;
+        logger.info(`Challenge already exists for club ${club.name as string}, skipping.`);
+        continue;
       }
 
       try {
@@ -373,13 +393,15 @@ export const generateWeeklyChallenges = onSchedule(
           createdAt: FieldValue.serverTimestamp(),
         });
 
-        logger.info(`AI challenge created for club: ${club.name}`);
-      } catch (err) {
-        logger.error(`Failed to generate challenge for club ${club.name}:`, err);
-      }
-    });
+        logger.info(`Gemini challenge created for club: ${club.name as string}`);
 
-    await Promise.allSettled(tasks);
+        // 4s delay between clubs to stay within 15 req/min
+        await delay(4000);
+      } catch (err) {
+        logger.error(`Failed to generate challenge for club ${club.name as string}:`, err);
+      }
+    }
+
     logger.info("Weekly challenge generation complete.");
   }
 );
@@ -389,7 +411,7 @@ export const generateWeeklyChallenges = onSchedule(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const getClubAIReport = onCall(
-  { secrets: [openaiApiKey] },
+  { secrets: [geminiApiKey] },
   async (request) => {
     if (!request.auth) {
       throw new HttpsError("unauthenticated", "يجب تسجيل الدخول أولاً");
@@ -400,24 +422,36 @@ export const getClubAIReport = onCall(
       throw new HttpsError("invalid-argument", "clubId مطلوب");
     }
 
-    // Verify caller is president or universityAdmin of this club
+    // Verify caller is president/universityAdmin/superAdmin
     const callerUid = request.auth.uid;
     const userDoc = await db.doc(`users/${callerUid}`).get();
     const userData = userDoc.data();
 
-    if (
-      !userData ||
-      (userData.role !== "president" && userData.role !== "universityAdmin" && userData.role !== "superAdmin") ||
-      (userData.role === "president" && userData.clubId !== clubId)
-    ) {
-      throw new HttpsError("permission-denied", "ليس لديك صلاحية لعرض تقرير هذا النادي");
+    const allowedRoles = ["president", "universityAdmin", "superAdmin"];
+    if (!userData || !allowedRoles.includes(userData.role as string)) {
+      throw new HttpsError("permission-denied", "ليس لديك صلاحية لعرض هذا التقرير");
+    }
+    if (userData.role === "president" && userData.clubId !== clubId) {
+      throw new HttpsError("permission-denied", "يمكنك فقط عرض تقرير ناديك");
+    }
+
+    // Return cached report if < 24h old
+    const cached = await db.doc(`clubReports/${clubId}`).get();
+    if (cached.exists) {
+      const cachedData = cached.data() as { generatedAt?: { seconds: number } };
+      const ageMs = cachedData.generatedAt
+        ? Date.now() - cachedData.generatedAt.seconds * 1000
+        : Infinity;
+      if (ageMs < 24 * 60 * 60 * 1000) {
+        logger.info(`Returning cached report for club ${clubId}`);
+        return cached.data();
+      }
     }
 
     // Gather real stats from Firestore
-    const now = new Date();
-    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const monthAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-    const [eventsSnap, membersSnap, challengesSnap] = await Promise.all([
+    const [eventsSnap, membersSnap, submissionsSnap] = await Promise.all([
       db.collection("events")
         .where("clubId", "==", clubId)
         .where("createdAt", ">=", monthAgo)
@@ -430,7 +464,7 @@ export const getClubAIReport = onCall(
         .get(),
     ]);
 
-    // Calculate attendance rate from events
+    // Attendance rate
     let totalAttendance = 0;
     let totalCapacity = 0;
     eventsSnap.docs.forEach((d) => {
@@ -441,14 +475,14 @@ export const getClubAIReport = onCall(
     const avgAttendance =
       totalCapacity > 0 ? Math.round((totalAttendance / totalCapacity) * 100) : 0;
 
-    // Calculate challenge stats
+    // Challenge stats
     const memberCount = membersSnap.size;
-    const submissionCount = challengesSnap.size;
+    const submissionCount = submissionsSnap.size;
     const completionRate =
       memberCount > 0 ? Math.round((submissionCount / memberCount) * 100) : 0;
 
     let totalScore = 0;
-    challengesSnap.docs.forEach((d) => {
+    submissionsSnap.docs.forEach((d) => {
       totalScore += (d.data().score as number) || 0;
     });
     const avgScore =
@@ -457,8 +491,8 @@ export const getClubAIReport = onCall(
     const clubDoc = await db.doc(`clubs/${clubId}`).get();
     const clubName = (clubDoc.data()?.name as string) || "النادي";
 
-    const apiKey = openaiApiKey.value();
-    const report = await generateClubReport(apiKey, clubName, {
+    // Generate report via Gemini
+    const report = await generateClubReport(geminiApiKey.value(), clubName, {
       eventCount: eventsSnap.size,
       memberCount,
       avgAttendance,
@@ -466,14 +500,23 @@ export const getClubAIReport = onCall(
       avgScore,
     });
 
-    // Cache report in Firestore (TTL: 24h)
-    await db.collection("clubReports").doc(clubId).set({
+    const payload = {
       ...report,
-      stats: { eventCount: eventsSnap.size, memberCount, avgAttendance, completionRate, avgScore },
+      stats: {
+        eventCount: eventsSnap.size,
+        memberCount,
+        avgAttendance,
+        completionRate,
+        avgScore,
+      },
       generatedAt: FieldValue.serverTimestamp(),
-    });
+    };
 
-    return report;
+    // Cache for 24h
+    await db.doc(`clubReports/${clubId}`).set(payload);
+    logger.info(`AI report generated for club ${clubId}`);
+
+    return payload;
   }
 );
 
@@ -490,4 +533,8 @@ function getWeekKey(d = new Date()): string {
     (((date as unknown as number) - (yearStart as unknown as number)) / 86400000 + 1) / 7
   );
   return `${date.getUTCFullYear()}-${String(weekNo).padStart(2, "0")}`;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
