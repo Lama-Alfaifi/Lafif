@@ -69,7 +69,9 @@ service cloud.firestore {
     // ─── /universities ───────────────────────────────────────────────────────
 
     match /universities/{universityId} {
-      allow read: if signedIn();
+      // Public read: needed during registration before the user has an auth account.
+      // University names and domains are not sensitive information.
+      allow read: if true;
       allow write: if isSuperAdmin();
     }
 
@@ -164,8 +166,15 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, update: if signedIn()
                            && resource.data.userId == request.auth.uid;
-      // Written by Firebase Functions (Admin SDK bypasses rules)
-      allow create: if false;
+      // Club leaders and admins create notifications client-side
+      // (no Firebase Functions / Blaze plan required)
+      allow create: if signedIn() && (
+        isClubLeader(request.resource.data.clubId ?? "")
+        || isAdmin()
+        || isSuperAdmin()
+        || myDoc().role == 'president'
+        || myDoc().role == 'vicePresident'
+      );
     }
 
     // ─── /challenges ─────────────────────────────────────────────────────────

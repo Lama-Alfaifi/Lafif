@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle, XCircle, Inbox, User } from "lucide-react";
+import { CheckCircle, XCircle, Inbox, User, AlertTriangle } from "lucide-react";
 import { approveJoinRequest, rejectJoinRequest } from "../services/joinRequests.service";
 import useJoinRequests   from "../hooks/useJoinRequests";
 import { useLanguage }   from "@/features/i18n/context/LanguageContext";
@@ -13,8 +13,8 @@ type Props = {
 };
 
 export default function JoinRequestsCard({ clubId, universityId, canManage = true }: Props) {
-  const { requests, loading, loadRequests } = useJoinRequests(clubId, universityId);
-  const [processingId, setProcessingId]     = useState<string | null>(null);
+  const { requests, loading, error, loadRequests } = useJoinRequests(clubId, universityId);
+  const [processingId, setProcessingId]            = useState<string | null>(null);
   const { t } = useLanguage();
 
   async function handleApprove(id: string) {
@@ -39,6 +39,22 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
 
   if (loading) {
     return <p className="text-sm text-gray-400 text-center py-4">{t.president.loadingJoinReqs}</p>;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-start gap-3 rounded-2xl bg-red-50 border border-red-100 px-4 py-3">
+        <AlertTriangle size={15} className="text-red-500 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-bold text-red-600">تعذّر جلب الطلبات</p>
+          <p className="text-xs text-red-400 mt-0.5 font-mono">{error}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            تحقق من أن clubId في ملفك الشخصي يطابق معرّف النادي في Firestore:
+            <span className="font-mono bg-gray-100 px-1 rounded ml-1">{clubId}</span>
+          </p>
+        </div>
+      </div>
+    );
   }
 
   if (requests.length === 0) {
