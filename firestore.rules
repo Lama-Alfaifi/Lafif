@@ -172,8 +172,15 @@ service cloud.firestore {
 
     match /challenges/{challengeId} {
       allow read: if sameUniversity(resource.data.universityId);
-      allow create, update: if isClubLeader(request.resource.data.clubId)
-                             && sameUniversity(request.resource.data.universityId);
+
+      // Any authenticated member of same university can create their club's challenge.
+      // Generation happens server-side (Next.js API Route → Gemini), client saves result.
+      allow create: if signedIn()
+                    && myDoc().universityId == request.resource.data.universityId
+                    && myDoc().clubId == request.resource.data.clubId;
+
+      // Only president / VP can overwrite or edit
+      allow update: if isClubLeader(resource.data.clubId);
     }
 
     // ─── /challengeSubmissions ───────────────────────────────────────────────
