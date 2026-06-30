@@ -11,11 +11,10 @@ export async function getPresidentStats(
   clubId: string,
   universityId: string
 ) {
-  const approvedMembersQuery = query(
-    collection(db, "joinRequests"),
-    where("clubId", "==", clubId),
-    where("universityId", "==", universityId),
-    where("status", "==", "approved")
+  // Count current members from users collection (accurate, not joinRequests)
+  const membersQuery = query(
+    collection(db, "users"),
+    where("clubId", "==", clubId)
   );
 
   const eventsQuery = query(
@@ -42,7 +41,7 @@ export async function getPresidentStats(
     attendanceSnapshot,
     ratingsSnapshot,
   ] = await Promise.all([
-    getDocs(approvedMembersQuery),
+    getDocs(membersQuery),
     getDocs(eventsQuery),
     getDocs(attendanceQuery),
     getDocs(ratingsQuery),

@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, CalendarDays, CheckCircle } from "lucide-react";
 import { createEvent } from "../services/createEvent.service";
+import { useLanguage }  from "@/features/i18n/context/LanguageContext";
 
 type Props = {
   onClose: () => void;
@@ -32,13 +33,14 @@ export default function CreateEventModal({
   const [type, setType] = useState<"public" | "members">("public");
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const [error, setError] = useState("");
+  const [error, setError]     = useState("");
+  const { t, dir } = useLanguage();
 
   async function handleCreate() {
     setError("");
 
     if (!title.trim() || !place.trim() || !date || !time) {
-      setError("يرجى تعبئة جميع الحقول المطلوبة.");
+      setError(t.president.evtFillAll);
       return;
     }
 
@@ -66,7 +68,7 @@ export default function CreateEventModal({
 
       setTimeout(onClose, 900);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "حدث خطأ أثناء إنشاء الفعالية.");
+      setError(err instanceof Error ? err.message : t.error);
     } finally {
       setLoading(false);
     }
@@ -76,7 +78,7 @@ export default function CreateEventModal({
     <div className="fixed inset-0 z-[100] bg-black/30 backdrop-blur-sm flex items-center justify-center p-5">
       <div
         className="w-full max-w-lg rounded-[32px] bg-white shadow-2xl border border-white/80 p-7 relative"
-        dir="rtl"
+        dir={dir}
       >
         {/* Close */}
         <button
@@ -92,21 +94,21 @@ export default function CreateEventModal({
             <CalendarDays size={18} className="text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-[#21166A]">فعالية جديدة</h2>
-            <p className="text-xs text-gray-400 mt-0.5">ستظهر فورًا في تقويم الفعاليات</p>
+            <h2 className="text-xl font-black text-[#21166A]">{t.president.createTitle}</h2>
+            <p className="text-xs text-gray-400 mt-0.5">{t.president.createSub}</p>
           </div>
         </div>
 
         <div className="space-y-3">
           <input
-            placeholder="عنوان الفعالية *"
+            placeholder={t.president.evtTitlePh}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className={INPUT_CLS}
           />
 
           <input
-            placeholder="المكان *"
+            placeholder={t.president.evtPlacePh}
             value={place}
             onChange={(e) => setPlace(e.target.value)}
             className={INPUT_CLS}
@@ -114,7 +116,7 @@ export default function CreateEventModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-bold text-gray-400 mb-1 block">التاريخ *</label>
+              <label className="text-xs font-bold text-gray-400 mb-1 block">{t.president.evtDateLabel}</label>
               <input
                 type="date"
                 value={date}
@@ -124,7 +126,7 @@ export default function CreateEventModal({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-gray-400 mb-1 block">الوقت *</label>
+              <label className="text-xs font-bold text-gray-400 mb-1 block">{t.president.evtTimeLabel}</label>
               <input
                 type="time"
                 value={time}
@@ -139,12 +141,12 @@ export default function CreateEventModal({
             onChange={(e) => setType(e.target.value as "public" | "members")}
             className={INPUT_CLS}
           >
-            <option value="public">فعالية عامة</option>
-            <option value="members">للأعضاء فقط</option>
+            <option value="public">{t.president.evtPublicOpt}</option>
+            <option value="members">{t.president.evtMembersOpt}</option>
           </select>
 
           <textarea
-            placeholder="وصف الفعالية (اختياري)"
+            placeholder={t.president.evtDescPh}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={3}
@@ -170,12 +172,12 @@ export default function CreateEventModal({
           {success ? (
             <>
               <CheckCircle size={16} />
-              تم إنشاء الفعالية!
+              {t.president.evtCreated}
             </>
           ) : loading ? (
-            "جارٍ الإنشاء..."
+            t.president.evtCreating
           ) : (
-            "إنشاء الفعالية"
+            t.president.evtCreate
           )}
         </button>
       </div>

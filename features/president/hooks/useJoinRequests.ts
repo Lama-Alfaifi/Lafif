@@ -1,46 +1,34 @@
 "use client";
 
 import { useEffect, useState } from "react";
-
 import {
-  getJoinRequests,
-} from "../services/joinRequests.service";
+  collection, query, where, onSnapshot,
+} from "firebase/firestore";
+import { db } from "@/src/lib/firebase";
 
-export default function useJoinRequests(
-  clubId: string,
-  universityId: string
-) {
-  const [requests, setRequests] =
-    useState<any[]>([]);
-
-  const [loading, setLoading] =
-    useState(true);
-
-  async function loadRequests() {
-    try {
-      const data =
-        await getJoinRequests(
-          clubId,
-          universityId
-        );
-
-      setRequests(data);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  }
+export default function useJoinRequests(clubId: string, universityId: string) {
+  const [requests, setRequests] = useState<any[]>([]);
+  const [loading, setLoading]   = useState(true);
 
   useEffect(() => {
-    if (!clubId || !universityId) return;
+    if (!clubId) return;
 
-    loadRequests();
-  }, [clubId, universityId]);
+    const q = query(
+      collection(db, "joinRequests"),
+      where("clubId",  "==", clubId),
+      where("status",  "==", "pending")
+    );
 
-  return {
-    requests,
-    loading,
-    loadRequests,
-  };
+    const unsub = onSnapshot(q, (snap) => {
+      setRequests(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    }, () => setLoading(false));
+
+    return () => unsub();
+  }, [clubId]);
+
+  // kept for compatibility with JoinRequestsCard which calls it after approve/reject
+  function loadRequests() { /* no-op: onSnapshot keeps list live */ }
+
+  return { requests, loading, loadRequests };
 }

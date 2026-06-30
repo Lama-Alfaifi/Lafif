@@ -3,6 +3,7 @@
 import { Users, Star, BarChart2 } from "lucide-react";
 import useEventAttendance from "../hooks/useEventAttendance";
 import { useEventRating } from "@/features/events/hooks/useEventRating";
+import { useLanguage }    from "@/features/i18n/context/LanguageContext";
 
 type Props = {
   eventId?: string;
@@ -45,30 +46,31 @@ function initials(name?: string) {
 export default function EventAttendanceCard({ eventId, universityId }: Props) {
   const { attendance, loading: attLoading } = useEventAttendance(eventId, universityId);
   const { stats, loading: ratingLoading }   = useEventRating(undefined, eventId);
+  const { t, dir } = useLanguage();
 
   if (!eventId) {
     return (
-      <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50 flex items-center justify-center min-h-[140px]" dir="rtl">
-        <p className="text-xs font-bold text-gray-400">اختر فعالية من الجدول</p>
+      <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50 flex items-center justify-center min-h-[140px]" dir={dir}>
+        <p className="text-xs font-bold text-gray-400">{t.president.selectEvent}</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-4" dir="rtl">
+    <div className="space-y-4" dir={dir}>
 
       {/* Attendance card */}
       <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
         <div className="flex items-center gap-2 mb-4">
           <Users size={15} className="text-[#7C3AED]" />
-          <h2 className="text-base font-black text-[#21166A]">الحضور</h2>
-          <span className="mr-auto text-xs text-gray-400 font-bold">{attendance.length} حاضر</span>
+          <h2 className="text-base font-black text-[#21166A]">{t.president.attendance}</h2>
+          <span className="mr-auto text-xs text-gray-400 font-bold">{attendance.length} {t.president.attendCount}</span>
         </div>
 
         {attLoading ? (
-          <p className="text-xs text-gray-400 font-bold text-center py-4">جاري التحميل...</p>
+          <p className="text-xs text-gray-400 font-bold text-center py-4">{t.loading}</p>
         ) : attendance.length === 0 ? (
-          <p className="text-xs text-gray-400 font-bold text-center py-4">لا يوجد حضور مسجل</p>
+          <p className="text-xs text-gray-400 font-bold text-center py-4">{t.president.noAttendance}</p>
         ) : (
           <div className="space-y-2 max-h-52 overflow-y-auto">
             {attendance.map((item) => (
@@ -77,7 +79,7 @@ export default function EventAttendanceCard({ eventId, universityId }: Props) {
                   {initials(item.userName)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-black text-[#21166A] truncate">{item.userName || "مستخدم"}</p>
+                  <p className="text-xs font-black text-[#21166A] truncate">{item.userName || t.president.newUser}</p>
                   <p className="text-[10px] text-gray-400 truncate">{item.userEmail || "—"}</p>
                 </div>
               </div>
@@ -90,33 +92,25 @@ export default function EventAttendanceCard({ eventId, universityId }: Props) {
       <div className="bg-white rounded-[24px] p-5 shadow-md border border-gray-50">
         <div className="flex items-center gap-2 mb-4">
           <BarChart2 size={15} className="text-amber-500" />
-          <h2 className="text-base font-black text-[#21166A]">تقييمات الفعالية</h2>
+          <h2 className="text-base font-black text-[#21166A]">{t.president.ratings}</h2>
         </div>
 
         {ratingLoading ? (
-          <p className="text-xs text-gray-400 font-bold text-center py-4">جاري التحميل...</p>
+          <p className="text-xs text-gray-400 font-bold text-center py-4">{t.loading}</p>
         ) : !stats || stats.count === 0 ? (
-          <p className="text-xs text-gray-400 font-bold text-center py-4">لا توجد تقييمات بعد</p>
+          <p className="text-xs text-gray-400 font-bold text-center py-4">{t.president.noRatings}</p>
         ) : (
           <div className="space-y-4">
-            {/* Average */}
             <div className="flex items-center gap-3 bg-amber-50 rounded-2xl px-4 py-3">
               <span className="text-3xl font-black text-amber-600">{stats.avg}</span>
               <div>
                 <StarDisplay value={stats.avg} />
-                <p className="text-[10px] text-amber-500 font-bold mt-1">{stats.count} تقييم</p>
+                <p className="text-[10px] text-amber-500 font-bold mt-1">{stats.count} {t.president.ratingCount}</p>
               </div>
             </div>
-
-            {/* Distribution */}
             <div className="space-y-1.5">
               {([5,4,3,2,1] as const).map((star) => (
-                <RatingBar
-                  key={star}
-                  label={String(star)}
-                  value={stats.distribution[star]}
-                  max={stats.count}
-                />
+                <RatingBar key={star} label={String(star)} value={stats.distribution[star]} max={stats.count} />
               ))}
             </div>
           </div>

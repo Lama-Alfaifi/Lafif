@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { Trash2, Users, CalendarDays } from "lucide-react";
-
-import useClubEvents from "../hooks/useClubEvents";
+import useClubEvents   from "../hooks/useClubEvents";
 import { deleteEvent } from "../services/createEvent.service";
+import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 type Props = {
   clubId: string;
@@ -22,8 +22,9 @@ export default function ClubEventsTable({
   canDelete = true,
 }: Props) {
   const { events, loading, reloadEvents } = useClubEvents(clubId, universityId, refreshKey);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [deletingId, setDeletingId]       = useState<string | null>(null);
+  const [confirmId, setConfirmId]         = useState<string | null>(null);
+  const { t, dir } = useLanguage();
 
   async function handleDelete(eventId: string) {
     setDeletingId(eventId);
@@ -39,18 +40,16 @@ export default function ClubEventsTable({
   if (loading) {
     return (
       <div className="bg-white rounded-[30px] p-5 shadow-lg mt-6">
-        <p className="text-sm text-gray-400 font-bold text-center py-6">
-          جاري تحميل الفعاليات...
-        </p>
+        <p className="text-sm text-gray-400 font-bold text-center py-6">{t.president.loadingEvents}</p>
       </div>
     );
   }
 
   return (
     <div className="bg-white rounded-[30px] p-5 shadow-lg mt-6">
-      <div className="flex items-center justify-between mb-5" dir="rtl">
-        <p className="text-sm text-gray-400">{events.length} فعالية</p>
-        <h2 className="text-xl font-black text-[#21166A]">فعاليات النادي</h2>
+      <div className="flex items-center justify-between mb-5" dir={dir}>
+        <p className="text-sm text-gray-400">{events.length} {t.president.evtCount}</p>
+        <h2 className="text-xl font-black text-[#21166A]">{t.president.events}</h2>
       </div>
 
       {events.length === 0 ? (
@@ -58,27 +57,24 @@ export default function ClubEventsTable({
           <div className="w-12 h-12 rounded-[16px] bg-[#F3F0FA] flex items-center justify-center">
             <CalendarDays size={20} className="text-[#7C3AED]" />
           </div>
-          <p className="text-sm font-bold text-gray-400">لا توجد فعاليات بعد</p>
-          <p className="text-xs text-gray-300">أنشئ فعاليتك الأولى بالضغط على "إضافة فعالية"</p>
+          <p className="text-sm font-bold text-gray-400">{t.president.noEvents}</p>
+          <p className="text-xs text-gray-300">{t.president.noEventsSub}</p>
         </div>
       ) : (
-        <div className="overflow-x-auto" dir="rtl">
+        <div className="overflow-x-auto" dir={dir}>
           <table className="w-full text-right text-sm">
             <thead>
               <tr className="border-b border-[#EEE7F8]">
-                <th className="pb-3 font-bold text-gray-400 text-xs">الفعالية</th>
-                <th className="pb-3 font-bold text-gray-400 text-xs">التاريخ</th>
-                <th className="pb-3 font-bold text-gray-400 text-xs">الوقت</th>
-                <th className="pb-3 font-bold text-gray-400 text-xs">النوع</th>
-                <th className="pb-3 font-bold text-gray-400 text-xs">إجراءات</th>
+                <th className="pb-3 font-bold text-gray-400 text-xs">{t.president.evtTitle}</th>
+                <th className="pb-3 font-bold text-gray-400 text-xs">{t.president.evtDate}</th>
+                <th className="pb-3 font-bold text-gray-400 text-xs">{t.president.evtTime}</th>
+                <th className="pb-3 font-bold text-gray-400 text-xs">{t.president.evtType}</th>
+                <th className="pb-3 font-bold text-gray-400 text-xs">{t.president.evtActions}</th>
               </tr>
             </thead>
             <tbody>
               {events.map((event) => (
-                <tr
-                  key={event.id}
-                  className="border-b border-[#F3F0FA] hover:bg-[#F8F6FC] transition"
-                >
+                <tr key={event.id} className="border-b border-[#F3F0FA] hover:bg-[#F8F6FC] transition">
                   <td className="py-4 font-black text-[#21166A] pr-1 max-w-[180px] truncate">
                     {event.title}
                   </td>
@@ -90,29 +86,25 @@ export default function ClubEventsTable({
                   <td className="py-4 text-gray-500">{event.time}</td>
 
                   <td className="py-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        event.type === "public"
-                          ? "bg-emerald-100 text-emerald-600"
-                          : "bg-red-100 text-red-500"
-                      }`}
-                    >
-                      {event.type === "public" ? "عامة" : "للأعضاء"}
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                      event.type === "public"
+                        ? "bg-emerald-100 text-emerald-600"
+                        : "bg-red-100 text-red-500"
+                    }`}>
+                      {event.type === "public" ? t.president.evtPublic : t.president.evtMembers}
                     </span>
                   </td>
 
                   <td className="py-4">
                     <div className="flex items-center gap-2">
-                      {/* View attendance */}
                       <button
                         onClick={() => onSelectEvent?.(event.id)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#21166A] text-white text-xs font-bold hover:opacity-90 transition"
                       >
                         <Users size={12} />
-                        الحضور
+                        {t.president.viewAtt}
                       </button>
 
-                      {/* Delete */}
                       {canDelete && (
                         confirmId === event.id ? (
                           <div className="flex items-center gap-1.5">
@@ -121,13 +113,13 @@ export default function ClubEventsTable({
                               disabled={deletingId === event.id}
                               className="px-3 py-1.5 rounded-xl bg-red-500 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-60"
                             >
-                              {deletingId === event.id ? "..." : "تأكيد"}
+                              {deletingId === event.id ? "..." : t.president.confirm}
                             </button>
                             <button
                               onClick={() => setConfirmId(null)}
                               className="px-3 py-1.5 rounded-xl bg-gray-100 text-gray-500 text-xs font-bold hover:bg-gray-200 transition"
                             >
-                              إلغاء
+                              {t.cancel}
                             </button>
                           </div>
                         ) : (

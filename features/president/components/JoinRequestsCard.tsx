@@ -2,12 +2,9 @@
 
 import { useState } from "react";
 import { CheckCircle, XCircle, Inbox, User } from "lucide-react";
-
-import {
-  approveJoinRequest,
-  rejectJoinRequest,
-} from "../services/joinRequests.service";
-import useJoinRequests from "../hooks/useJoinRequests";
+import { approveJoinRequest, rejectJoinRequest } from "../services/joinRequests.service";
+import useJoinRequests   from "../hooks/useJoinRequests";
+import { useLanguage }   from "@/features/i18n/context/LanguageContext";
 
 type Props = {
   clubId: string;
@@ -17,7 +14,8 @@ type Props = {
 
 export default function JoinRequestsCard({ clubId, universityId, canManage = true }: Props) {
   const { requests, loading, loadRequests } = useJoinRequests(clubId, universityId);
-  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [processingId, setProcessingId]     = useState<string | null>(null);
+  const { t } = useLanguage();
 
   async function handleApprove(id: string) {
     setProcessingId(id);
@@ -40,9 +38,7 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
   }
 
   if (loading) {
-    return (
-      <p className="text-sm text-gray-400 text-center py-4">جاري تحميل الطلبات...</p>
-    );
+    return <p className="text-sm text-gray-400 text-center py-4">{t.president.loadingJoinReqs}</p>;
   }
 
   if (requests.length === 0) {
@@ -51,7 +47,7 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
         <div className="w-12 h-12 rounded-[16px] bg-[#F3F0FA] flex items-center justify-center">
           <Inbox size={20} className="text-[#7C3AED]" />
         </div>
-        <p className="text-sm font-bold text-gray-400">لا توجد طلبات انضمام حاليًا</p>
+        <p className="text-sm font-bold text-gray-400">{t.president.noJoinReqs}</p>
       </div>
     );
   }
@@ -73,7 +69,7 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
             {/* Info */}
             <div className="flex-1 min-w-0">
               <p className="text-sm font-black text-[#21166A] truncate">
-                {req.userName || "مستخدم جديد"}
+                {req.userName || t.president.newUser}
               </p>
               <p className="text-xs text-gray-400 truncate mt-0.5">
                 {req.userEmail || "—"}
@@ -89,7 +85,7 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-500 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50"
                 >
                   <CheckCircle size={13} />
-                  {isProcessing ? "..." : "قبول"}
+                  {isProcessing ? "..." : t.approve}
                 </button>
                 <button
                   onClick={() => handleReject(req.id)}
@@ -97,7 +93,7 @@ export default function JoinRequestsCard({ clubId, universityId, canManage = tru
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-500 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50"
                 >
                   <XCircle size={13} />
-                  {isProcessing ? "..." : "رفض"}
+                  {isProcessing ? "..." : t.reject}
                 </button>
               </div>
             )}
