@@ -58,9 +58,10 @@ service cloud.firestore {
             && resource.data.clubId != ""
             && isClubLeader(resource.data.clubId))
       );
-      allow create: if signedIn()
-                    && request.auth.uid == userId
-                    && request.resource.data.role == 'student';
+      allow create: if signedIn() && (
+        (request.auth.uid == userId && request.resource.data.role == 'student')
+        || isSuperAdmin()
+      );
       allow update: if signedIn() && (
         (request.auth.uid == userId
           && !request.resource.data.diff(resource.data).affectedKeys()

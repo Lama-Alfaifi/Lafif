@@ -7,9 +7,10 @@ import { useAuth } from "@/features/auth/context/AuthContext";
 import { useRouter } from "next/navigation";
 import {
   Building2, Users, Trophy, Globe,
-  BarChart2, ExternalLink, RefreshCw,
+  BarChart2, ExternalLink, RefreshCw, Plus,
 } from "lucide-react";
 import Sidebar from "@/features/dashboard/components/Sidebar";
+import AddUniversityModal from "./AddUniversityModal";
 import Link from "next/link";
 
 type University = {
@@ -55,6 +56,7 @@ export default function SuperAdminDashboard() {
   const [universities, setUniversities] = useState<University[]>([]);
   const [stats, setStats] = useState<GlobalStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -117,13 +119,22 @@ export default function SuperAdminDashboard() {
                 <h1 className="text-xl font-black text-[#21166A]">نظرة عامة — جميع الجامعات</h1>
               </div>
             </div>
-            <button
-              onClick={loadData}
-              disabled={loading}
-              className="w-9 h-9 rounded-2xl bg-[#EFE8F7] text-[#7C3AED] flex items-center justify-center hover:bg-[#E0D4F5] transition disabled:opacity-40"
-            >
-              <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-[#7C3AED] text-white text-xs font-bold hover:opacity-90 transition"
+              >
+                <Plus size={14} />
+                إضافة جامعة
+              </button>
+              <button
+                onClick={loadData}
+                disabled={loading}
+                className="w-9 h-9 rounded-2xl bg-[#EFE8F7] text-[#7C3AED] flex items-center justify-center hover:bg-[#E0D4F5] transition disabled:opacity-40"
+              >
+                <RefreshCw size={15} className={loading ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
         </header>
 
@@ -175,7 +186,7 @@ export default function SuperAdminDashboard() {
               <div className="text-center py-10">
                 <Globe size={28} className="text-gray-200 mx-auto mb-2" />
                 <p className="text-sm text-gray-400 font-bold">لا توجد جامعات مسجّلة</p>
-                <p className="text-xs text-gray-300 mt-1">أضف الجامعات من Firebase Console</p>
+                <p className="text-xs text-gray-300 mt-1">اضغط "إضافة جامعة" للبدء</p>
               </div>
             ) : (
               <div className="p-4 space-y-2">
@@ -208,6 +219,13 @@ export default function SuperAdminDashboard() {
       </div>
 
       <Sidebar />
+
+      {showAddModal && (
+        <AddUniversityModal
+          onClose={() => setShowAddModal(false)}
+          onCreated={() => { loadData(); setShowAddModal(false); }}
+        />
+      )}
     </div>
   );
 }
