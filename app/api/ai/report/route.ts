@@ -11,6 +11,8 @@ interface ReportStats {
   avgScore: number;
   avgAccuracy: number;
   totalScore: number;
+  trendDirection?: "improving" | "declining" | "stable";
+  trendDelta?: number;
 }
 
 interface RequestBody {
@@ -36,6 +38,18 @@ function buildPrompt(clubName: string, category: string, s: ReportStats): string
 
   if (s.memberCount < 10)
     lines.push("ملاحظة: النادي صغير ويحتاج استقطاب أعضاء.");
+
+  const trendLabel =
+    s.trendDirection === "improving"
+      ? `تحسّن ↑ (+${s.trendDelta} نقطة مقارنةً بالأسابيع السابقة)`
+      : s.trendDirection === "declining"
+      ? `تراجع ↓ (${s.trendDelta} نقطة مقارنةً بالأسابيع السابقة)`
+      : "مستقر →";
+
+  if (s.trendDirection === "declining")
+    lines.push(`⚠️ اتجاه الأداء: ${trendLabel} — يحتاج تدخلاً عاجلاً.`);
+  else if (s.trendDirection === "improving")
+    lines.push(`✅ اتجاه الأداء: ${trendLabel} — مؤشر إيجابي يستحق التعزيز.`);
 
   const notes = lines.join("\n") || "لا توجد تحذيرات — الأداء العام مقبول.";
 
