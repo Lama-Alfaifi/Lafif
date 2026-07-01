@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 import { auth } from "@/src/lib/firebase";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import useNotifications from "@/features/notifications/hooks/useNotifications";
+import useFCMToken from "@/features/notifications/hooks/useFCMToken";
 import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 const NAV_HREFS = [
@@ -34,9 +35,11 @@ const ROLE_NAV: Record<string, { href: string; label: string; icon: React.Elemen
 export default function Sidebar() {
   const pathname        = usePathname();
   const router          = useRouter();
-  const { profile }     = useAuth();
-  const { unreadCount } = useNotifications();
+  const { user, profile } = useAuth();
+  const { unreadCount }   = useNotifications();
   const { t, lang, setLang, isRTL } = useLanguage();
+
+  useFCMToken(user?.uid);
 
   async function handleLogout() {
     await signOut(auth);
@@ -44,9 +47,11 @@ export default function Sidebar() {
   }
 
   const firstName  = profile?.name?.split(" ")[0] ?? "";
+
   const roleLabel  = t.roles[profile?.role as keyof typeof t.roles] ?? profile?.role ?? "";
   const initial    = (profile?.name ?? "?")[0];
   const roleLink   = profile?.role ? ROLE_NAV[profile.role] ?? null : null;
+
 
   return (
     <aside

@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDocs,
+  getDoc,
   orderBy,
   query,
   updateDoc,
@@ -20,12 +21,31 @@ type CreateNotificationData = {
   type: string;
 };
 
+async function sendPush(userId: string, title: string, body: string) {
+  try {
+    const snap = await getDoc(doc(db, "users", userId));
+    const token = (snap.data() as { fcmToken?: string } | undefined)?.fcmToken;
+    if (!token) return;
+
+    fetch("/api/push-notification", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, title, body }),
+    }).catch(() => {});
+  } catch {
+    // push is best-effort
+  }
+}
+
 export async function createNotification(data: CreateNotificationData) {
   await addDoc(collection(db, "notifications"), {
     ...data,
     isRead: false,
     createdAt: new Date(),
   });
+
+  // fire push notification without blocking
+  sendPush(data.userId, data.title, data.message);
 }
 
 export async function getNotifications(userId: string): Promise<Notification[]> {
