@@ -1,100 +1,111 @@
 "use client";
 
+import { Users, Trophy, BookOpen } from "lucide-react";
+import type { UniMember } from "../services/members.service";
+
 type Club = {
   id: string;
   name?: string;
   college?: string;
   category?: "central" | "decentralized";
   email?: string;
+  presidentId?: string;
+  score?: number;
 };
 
-type UniversityClubsTableProps = {
+interface Props {
   clubs: Club[];
+  members: UniMember[];
   loading: boolean;
-};
+  onViewMembers: (club: Club) => void;
+}
 
-export default function UniversityClubsTable({
-  clubs,
-  loading,
-}: UniversityClubsTableProps) {
+export default function UniversityClubsTable({ clubs, members, loading, onViewMembers }: Props) {
   if (loading) {
     return (
-      <p className="text-sm text-gray-500">
-        جاري تحميل الأندية...
-      </p>
+      <div className="p-4 space-y-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="h-20 rounded-2xl bg-gray-100 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (clubs.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <BookOpen size={28} className="text-gray-200 mx-auto mb-2" />
+        <p className="text-sm text-gray-400 font-bold">لا توجد أندية مضافة حالياً</p>
+      </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-[30px] p-5 shadow-lg mt-6">
-      <div className="flex items-center justify-between mb-5">
-        <p className="text-sm text-gray-500">
-          {clubs.length} نادي
-        </p>
+    <div className="p-4 space-y-3">
+      {clubs.map((club) => {
+        const memberCount = members.filter((m) => m.clubId === club.id).length;
+        const president = members.find((m) => m.clubId === club.id && m.role === "president");
+        const isCentral = club.category !== "decentralized";
 
-        <h2 className="text-xl font-black text-[#21166A]">
-          أندية الجامعة
-        </h2>
-      </div>
+        return (
+          <div
+            key={club.id}
+            className="flex items-center gap-4 px-4 py-4 rounded-2xl bg-gray-50 hover:bg-[#F7F5FF] transition"
+          >
+            {/* Color dot */}
+            <div
+              className={`w-2 h-10 rounded-full shrink-0 ${isCentral ? "bg-[#7C3AED]" : "bg-emerald-400"}`}
+            />
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-right">
-          <thead>
-            <tr className="border-b border-[#EEE7F8]">
-              <th className="pb-3 text-sm text-gray-400">
-                النادي
-              </th>
+            {/* Main info */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <p className="text-sm font-black text-[#21166A] truncate">{club.name ?? "بدون اسم"}</p>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full shrink-0 ${
+                    isCentral
+                      ? "bg-purple-50 text-purple-600"
+                      : "bg-emerald-50 text-emerald-600"
+                  }`}
+                >
+                  {isCentral ? "مركزي" : "لامركزي"}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-[11px] text-gray-400 font-bold">
+                {club.college && <span>{club.college}</span>}
+                {president && (
+                  <>
+                    <span className="text-gray-200">•</span>
+                    <span className="text-amber-600">{president.name ?? president.email}</span>
+                  </>
+                )}
+              </div>
+            </div>
 
-              <th className="pb-3 text-sm text-gray-400">
-                الكلية
-              </th>
+            {/* Stats */}
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex items-center gap-1 text-[11px] font-bold text-gray-500">
+                <Users size={12} className="text-gray-400" />
+                {memberCount}
+              </div>
+              {(club.score ?? 0) > 0 && (
+                <div className="flex items-center gap-1 text-[11px] font-bold text-amber-600">
+                  <Trophy size={11} />
+                  {club.score}
+                </div>
+              )}
+            </div>
 
-              <th className="pb-3 text-sm text-gray-400">
-                النوع
-              </th>
-
-              <th className="pb-3 text-sm text-gray-400">
-                البريد
-              </th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {clubs.map((club) => (
-              <tr
-                key={club.id}
-                className="border-b border-[#F3F0FA]"
-              >
-                <td className="py-4 font-bold text-[#21166A]">
-                  {club.name || "بدون اسم"}
-                </td>
-
-                <td className="py-4 text-sm text-gray-500">
-                  {club.college || "غير محدد"}
-                </td>
-
-                <td className="py-4">
-                  <span className="px-3 py-1 rounded-full bg-[#F3F0FA] text-[#21166A] text-xs font-bold">
-                    {club.category === "decentralized"
-                      ? "لامركزي"
-                      : "مركزي"}
-                  </span>
-                </td>
-
-                <td className="py-4 text-sm text-gray-500">
-                  {club.email || "لا يوجد"}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {clubs.length === 0 && (
-          <p className="text-sm text-gray-500 text-center py-8">
-            لا توجد أندية مضافة حالياً.
-          </p>
-        )}
-      </div>
+            {/* View members button */}
+            <button
+              onClick={() => onViewMembers(club)}
+              className="px-3 py-1.5 rounded-xl bg-[#EFE8F7] text-[#7C3AED] text-xs font-bold hover:bg-[#E0D4F5] transition shrink-0"
+            >
+              الأعضاء
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

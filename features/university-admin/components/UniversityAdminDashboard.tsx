@@ -1,16 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Building2, BookOpen, LayoutGrid, TrendingUp, Crown } from "lucide-react";
+import { Plus, Building2, BookOpen, LayoutGrid, TrendingUp, Crown, Users } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import CreateClubModal from "./CreateClubModal";
 import UniversityClubsTable from "./UniversityClubsTable";
+import ClubMembersModal from "./ClubMembersModal";
 import useUniversityClubs from "../hooks/useUniversityClubs";
+import useUniversityMembers from "../hooks/useUniversityMembers";
 import PositionRequestCard from "@/features/positions/components/PositionRequestCard";
 import { usePendingPresidentRequests } from "@/features/positions/hooks/usePositionRequests";
+
+type Club = {
+  id: string;
+  name?: string;
+  college?: string;
+  category?: "central" | "decentralized";
+  email?: string;
+  presidentId?: string;
+  score?: number;
+};
 
 function StatCard({
   icon,
@@ -40,15 +52,11 @@ export default function UniversityAdminDashboard() {
   const { user, profile, loading } = useAuth();
   const { t, dir } = useLanguage();
   const [showCreateClub, setShowCreateClub] = useState(false);
+  const [selectedClub, setSelectedClub] = useState<Club | null>(null);
 
-  const {
-    clubs,
-    loading: clubsLoading,
-    loadClubs,
-  } = useUniversityClubs(profile?.universityId);
-
-  const { requests: presidentRequests, reload: reloadPresidentReqs } =
-    usePendingPresidentRequests(profile?.universityId);
+  const { clubs, loading: clubsLoading, loadClubs } = useUniversityClubs(profile?.universityId);
+  const { members, loading: membersLoading, reload: reloadMembers } = useUniversityMembers(profile?.universityId);
+  const { requests: presidentRequests, reload: reloadPresidentReqs } = usePendingPresidentRequests(profile?.universityId);
 
   if (loading) {
     return (
@@ -69,9 +77,15 @@ export default function UniversityAdminDashboard() {
     );
   }
 
-  const centralCount     = clubs.filter((c) => c.category !== "decentralized").length;
-  const decentralized    = clubs.filter((c) => c.category === "decentralized").length;
-  const withPresident    = clubs.filter((c) => c.presidentId).length;
+  const centralCount  = clubs.filter((c) => c.category !== "decentralized").length;
+  const decentralized = clubs.filter((c) => c.category === "decentralized").length;
+  const withPresident = clubs.filter((c) => c.presidentId).length;
+  const activeMembers = members.filter((m) => m.clubId && m.clubId !== "").length;
+
+  function handleMembersChanged() {
+    reloadMembers();
+    setSelectedClub(null);
+  }
 
   return (
     <div className="flex min-h-screen bg-[#F7F5FF]">
@@ -107,6 +121,7 @@ export default function UniversityAdminDashboard() {
         {/* Content */}
         <div className="flex-1 p-6 lg:p-8" dir={dir}>
 
+          {/* Stats */}
           <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
             <StatCard
               icon={<LayoutGrid size={18} className="text-[#7C3AED]" />}
@@ -115,9 +130,9 @@ export default function UniversityAdminDashboard() {
               accent="bg-[#EFE8F7]"
             />
             <StatCard
-              icon={<BookOpen size={18} className="text-blue-500" />}
-              label={t.univAdmin.centralClubs}
-              value={centralCount}
+              icon={<Users size={18} className="text-blue-500" />}
+              label="أعضاء نشطون"
+              value={activeMembers}
               accent="bg-blue-50"
             />
             <StatCard
@@ -127,27 +142,32 @@ export default function UniversityAdminDashboard() {
               accent="bg-emerald-50"
             />
             <StatCard
-              icon={<Building2 size={18} className="text-amber-500" />}
+              icon={<Crown size={18} className="text-amber-500" />}
               label={t.univAdmin.withPresident}
               value={withPresident}
               accent="bg-amber-50"
             />
           </div>
 
-          <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
+          {/* Clubs list */}
+          <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden mb-6">
             <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <LayoutGrid size={15} className="text-[#7C3AED]" />
                 <h2 className="text-base font-black text-[#21166A]">{t.univAdmin.clubsList}</h2>
               </div>
-              {clubsLoading && (
-                <span className="text-xs text-gray-400 font-bold">{t.univAdmin.loadingClubs}</span>
-              )}
+              <span className="text-xs text-gray-400 font-bold">{clubs.length} نادي</span>
             </div>
 
-            <UniversityClubsTable clubs={clubs} loading={clubsLoading} />
+            <UniversityClubsTable
+              clubs={clubs as Club[]}
+              members={members}
+              loading={clubsLoading || membersLoading}
+              onViewMembers={(club) => setSelectedClub(club as Club)}
+            />
           </div>
 
+          {/* President requests */}
           {presidentRequests.length > 0 && (
             <div className="bg-white rounded-[24px] shadow-md border border-gray-50 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-50 flex items-center gap-3">
@@ -180,6 +200,15 @@ export default function UniversityAdminDashboard() {
           universityId={profile.universityId}
           universityName={profile.universityName || ""}
           onCreated={loadClubs}
+        />
+      )}
+
+      {selectedClub && (
+        <ClubMembersModal
+          club={selectedClub}
+          members={members}
+          onClose={() => setSelectedClub(null)}
+          onChanged={handleMembersChanged}
         />
       )}
     </div>
