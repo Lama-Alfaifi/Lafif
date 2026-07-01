@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Users, Shield, ChevronDown, CheckCircle, XCircle, UserCog, Wrench, Loader2 } from "lucide-react";
+import { Users, Shield, ChevronDown, CheckCircle, XCircle, UserCog, Wrench, Loader2, BarChart2 } from "lucide-react";
 
 import Sidebar from "@/features/dashboard/components/Sidebar";
 import { useLanguage } from "@/features/i18n/context/LanguageContext";
 import useUsers from "../hooks/useUsers";
 import useAdminClubs from "../hooks/useAdminClubs";
-import { assignPresident, removePresidentRole, fixUserUniversityData, type FixResult } from "../services/users.service";
+import { assignPresident, removePresidentRole, fixUserUniversityData, backfillClubScores, type FixResult } from "../services/users.service";
 
 const ROLE_STYLE: Record<string, string> = {
   superAdmin:      "bg-purple-100 text-purple-700",
@@ -148,9 +148,11 @@ function UniversitySection({
 export default function AdminUsersPage() {
   const { t, dir } = useLanguage();
   const { users, loading, loadUsers } = useUsers();
-  const [actionUserId, setActionUserId]   = useState<string | null>(null);
-  const [fixing, setFixing]               = useState(false);
-  const [fixResult, setFixResult]         = useState<FixResult | null>(null);
+  const [actionUserId, setActionUserId]     = useState<string | null>(null);
+  const [fixing, setFixing]                 = useState(false);
+  const [fixResult, setFixResult]           = useState<FixResult | null>(null);
+  const [backfilling, setBackfilling]       = useState(false);
+  const [backfillResult, setBackfillResult] = useState<FixResult | null>(null);
 
   async function handleFixUniversities() {
     setFixing(true);
@@ -161,6 +163,17 @@ export default function AdminUsersPage() {
       await loadUsers();
     } finally {
       setFixing(false);
+    }
+  }
+
+  async function handleBackfillScores() {
+    setBackfilling(true);
+    setBackfillResult(null);
+    try {
+      const result = await backfillClubScores();
+      setBackfillResult(result);
+    } finally {
+      setBackfilling(false);
     }
   }
 
@@ -217,6 +230,17 @@ export default function AdminUsersPage() {
                   {users.filter((u) => u.role === "president").length} {t.admin.presCount}
                 </span>
               </div>
+              <button
+                onClick={handleBackfillScores}
+                disabled={backfilling}
+                title="يحسب مجموع نقاط challengeSubmissions ويكتبها في clubs.score"
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl bg-emerald-500 text-white text-xs font-bold hover:opacity-90 transition disabled:opacity-50 shadow-sm"
+              >
+                {backfilling
+                  ? <><Loader2 size={13} className="animate-spin" />جاري الحساب...</>
+                  : <><BarChart2 size={13} />إصلاح نقاط الأندية</>
+                }
+              </button>
               <button
                 onClick={handleFixUniversities}
                 disabled={fixing}
@@ -275,10 +299,7 @@ export default function AdminUsersPage() {
             >
               <div className="bg-amber-500 px-5 py-3 flex items-center justify-between">
                 <span className="text-white text-sm font-black">{t.admin.fixTitle}</span>
-                <button
-                  onClick={() => setFixResult(null)}
-                  className="text-white/70 hover:text-white text-lg leading-none"
-                >×</button>
+                <button onClick={() => setFixResult(null)} className="text-white/70 hover:text-white text-lg leading-none">×</button>
               </div>
               <div className="px-5 py-4 space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center">
@@ -299,6 +320,37 @@ export default function AdminUsersPage() {
                   <div className="max-h-32 overflow-y-auto space-y-1">
                     {fixResult.details.map((d, i) => (
                       <p key={i} className="text-[11px] text-gray-500 font-bold bg-gray-50 rounded-xl px-3 py-1.5">{d}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {backfillResult && (
+            <div
+              className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[90vw] max-w-md bg-white rounded-[24px] shadow-2xl border border-gray-100 overflow-hidden"
+              dir={dir}
+            >
+              <div className="bg-emerald-500 px-5 py-3 flex items-center justify-between">
+                <span className="text-white text-sm font-black">نتيجة إصلاح نقاط الأندية</span>
+                <button onClick={() => setBackfillResult(null)} className="text-white/70 hover:text-white text-lg leading-none">×</button>
+              </div>
+              <div className="px-5 py-4 space-y-3">
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-emerald-50 rounded-2xl py-3">
+                    <p className="text-2xl font-black text-emerald-600">{backfillResult.fixed}</p>
+                    <p className="text-[10px] text-emerald-500 font-bold">نادٍ تم تحديثه</p>
+                  </div>
+                  <div className="bg-red-50 rounded-2xl py-3">
+                    <p className="text-2xl font-black text-red-500">{backfillResult.failed}</p>
+                    <p className="text-[10px] text-red-400 font-bold">فشل التحديث</p>
+                  </div>
+                </div>
+                {backfillResult.details.length > 0 && (
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {backfillResult.details.map((d, i) => (
+                      <p key={i} className="text-[11px] text-gray-500 font-bold bg-gray-50 rounded-xl px-3 py-1.5 font-mono">{d}</p>
                     ))}
                   </div>
                 )}

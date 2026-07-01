@@ -3,8 +3,6 @@ import {
   getDocs,
   doc,
   updateDoc,
-  query,
-  where,
 } from "firebase/firestore";
 
 import { db } from "@/src/lib/firebase";
@@ -98,6 +96,45 @@ export async function fixUserUniversityData(): Promise<FixResult> {
     } catch {
       result.failed++;
       result.details.push(`${email} — فشل التحديث`);
+    }
+  }
+
+  return result;
+}
+
+/* ── Backfill clubs.score from challengeSubmissions ─────────────────────────
+ *  Reads every submission, sums scores per clubId, then OVERWRITES clubs.score
+ *  so the clubs leaderboard reflects all historical data.
+ *  Safe to run multiple times (idempotent — always writes the correct total).
+ * ────────────────────────────────────────────────────────────────────────── */
+export async function backfillClubScores(): Promise<FixResult> {
+  const result: FixResult = { fixed: 0, skipped: 0, failed: 0, details: [] };
+
+  // 1. Aggregate scores per club from all submissions
+  const submissionsSnap = await getDocs(collection(db, "challengeSubmissions"));
+
+  const clubTotals = new Map<string, number>();
+  submissionsSnap.docs.forEach((d) => {
+    const data = d.data() as { clubId?: string; score?: number };
+    if (data.clubId && typeof data.score === "number") {
+      clubTotals.set(data.clubId, (clubTotals.get(data.clubId) ?? 0) + data.score);
+    }
+  });
+
+  if (clubTotals.size === 0) {
+    result.details.push("لا توجد تسليمات في challengeSubmissions — لا يوجد ما يُصلح");
+    return result;
+  }
+
+  // 2. Write totals to each club document
+  for (const [clubId, total] of clubTotals.entries()) {
+    try {
+      await updateDoc(doc(db, "clubs", clubId), { score: total });
+      result.fixed++;
+      result.details.push(`${clubId}: ${total} نقطة`);
+    } catch (e: any) {
+      result.failed++;
+      result.details.push(`${clubId} — فشل: ${e?.code ?? e?.message ?? "خطأ غير معروف"}`);
     }
   }
 
