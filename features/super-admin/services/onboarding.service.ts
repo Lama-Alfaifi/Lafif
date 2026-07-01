@@ -66,6 +66,13 @@ export async function createUniversityWithAdmin(
       createdAt: serverTimestamp(),
     });
 
+    // 4. Send welcome email with credentials (non-blocking — failure doesn't abort)
+    fetch("/api/send-admin-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ adminName, adminEmail, adminPassword, universityName }),
+    }).catch((e) => console.warn("[onboarding] email send failed:", e));
+
     return { universityId, adminUid };
   } catch (error) {
     // Rollback university doc on any failure
