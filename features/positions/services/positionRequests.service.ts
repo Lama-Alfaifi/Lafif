@@ -12,6 +12,16 @@ import {
 import { db } from "@/src/lib/firebase";
 import { assignPresident } from "@/features/admin/services/users.service";
 
+async function sendNotification(userId: string, title: string, message: string, type: string) {
+  try {
+    await addDoc(collection(db, "notifications"), {
+      userId, title, message, type, isRead: false, createdAt: serverTimestamp(),
+    });
+  } catch {
+    // non-critical
+  }
+}
+
 export type PositionType = "vicePresident" | "president";
 export type RequestStatus = "pending" | "approved" | "rejected";
 
@@ -57,6 +67,36 @@ export async function submitPositionRequest(args: {
     status: "pending",
     requestedAt: serverTimestamp(),
   });
+
+  // Notify the relevant reviewer
+  if (args.position === "vicePresident") {
+    // Find the club's president to notify them
+    const presSnap = await getDocs(
+      query(collection(db, "users"), where("clubId", "==", args.clubId), where("role", "==", "president"))
+    );
+    if (!presSnap.empty) {
+      await sendNotification(
+        presSnap.docs[0].id,
+        "طلب منصب نائب رئيس",
+        `${args.userName} يطلب منصب نائب رئيس في ${args.clubName}`,
+        "position_request"
+      );
+    }
+  } else if (args.position === "president") {
+    // Find the university admin to notify them
+    const adminSnap = await getDocs(
+      query(collection(db, "users"), where("universityId", "==", args.universityId), where("role", "==", "universityAdmin"))
+    );
+    if (!adminSnap.empty) {
+      await sendNotification(
+        adminSnap.docs[0].id,
+        "طلب منصب رئيس نادي",
+        `${args.userName} يطلب رئاسة ${args.clubName}`,
+        "position_request"
+      );
+    }
+  }
+
   return ref.id;
 }
 

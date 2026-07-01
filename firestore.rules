@@ -70,7 +70,6 @@ service cloud.firestore {
 
     match /universities/{universityId} {
       // Public read: needed during registration before the user has an auth account.
-      // University names and domains are not sensitive information.
       allow read: if true;
       allow write: if isSuperAdmin();
     }
@@ -82,6 +81,7 @@ service cloud.firestore {
       allow create: if isUniversityAdmin(request.resource.data.universityId);
       allow update: if isUniversityAdmin(resource.data.universityId)
                     || isClubLeader(clubId)
+                    || isSuperAdmin()
                     // Members can increment only the score field (challenge submissions)
                     || (signedIn()
                         && sameUniversity(resource.data.universityId)
@@ -139,7 +139,6 @@ service cloud.firestore {
 
     match /clubMembers/{memberId} {
       allow read: if sameUniversity(resource.data.universityId);
-      // Written by Firebase Functions only (Admin SDK bypasses rules)
       allow write: if false;
     }
 
@@ -170,14 +169,11 @@ service cloud.firestore {
     match /notifications/{notificationId} {
       allow read, update: if signedIn()
                            && resource.data.userId == request.auth.uid;
-      // Club leaders and admins create notifications client-side
-      // (no Firebase Functions / Blaze plan required)
-      allow create: if signedIn() && (
-        myDoc().role == 'president'
-        || myDoc().role == 'vicePresident'
-        || isAdmin()
-        || isSuperAdmin()
-      );
+      // Any signed-in user can create a notification for another user.
+      // Reading is still restricted to the target user (userId == auth.uid above),
+      // so notifications remain private. This is needed because students notify
+      // the president on join requests, members notify the president on VP requests, etc.
+      allow create: if signedIn();
     }
 
     // ─── /challenges ─────────────────────────────────────────────────────────
@@ -185,14 +181,21 @@ service cloud.firestore {
     match /challenges/{challengeId} {
       allow read: if sameUniversity(resource.data.universityId);
 
-      // Any authenticated member of same university can create their club's challenge.
-      // Generation happens server-side (Next.js API Route → Gemini), client saves result.
+      // President/VP can always create for their university.
+      // Regular members can create if their clubId matches (used in the auto-generate flow).
+      // The myDoc().clubId == clubId check can fail if the president was added
+      // manually without setting clubId, so we also accept by role.
       allow create: if signedIn()
                     && myDoc().universityId == request.resource.data.universityId
-                    && myDoc().clubId == request.resource.data.clubId;
+                    && (
+                        myDoc().clubId == request.resource.data.clubId
+                        || myDoc().role == 'president'
+                        || myDoc().role == 'vicePresident'
+                    );
 
       // Only president / VP can overwrite or edit
-      allow update: if isClubLeader(resource.data.clubId);
+      allow update: if isClubLeader(resource.data.clubId)
+                    || isSuperAdmin();
     }
 
     // ─── /challengeSubmissions ───────────────────────────────────────────────
@@ -212,13 +215,11 @@ service cloud.firestore {
     // ─── /clubReports ────────────────────────────────────────────────────────
 
     match /clubReports/{clubId} {
-      // President of that club, universityAdmin, or superAdmin can read
       allow read: if signedIn() && (
         isPresidentOf(clubId)
         || isVPOf(clubId)
         || isAdmin()
       );
-      // Written by Firebase Functions only
       allow write: if false;
     }
 

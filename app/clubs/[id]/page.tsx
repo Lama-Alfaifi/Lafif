@@ -79,18 +79,41 @@ export default function ClubPage() {
     setMessage("");
     try {
       await addDoc(collection(db, "joinRequests"), {
-        userId:        user.uid,
-        userName:      profile.name ?? "",
-        userEmail:     profile.email ?? user.email ?? "",
+        userId:         user.uid,
+        userName:       profile.name ?? "",
+        userEmail:      profile.email ?? user.email ?? "",
         clubId,
-        clubName:      club?.name ?? "",
-        universityId:  profile.universityId || club?.universityId || "",
+        clubName:       club?.name ?? "",
+        universityId:   profile.universityId || club?.universityId || "",
         universityName: profile.universityName ?? "",
-        status:        "pending",
-        createdAt:     serverTimestamp(),
+        status:         "pending",
+        createdAt:      serverTimestamp(),
       });
       setJoinStatus("pending");
       setMessage(t.clubPage.joinSuccess);
+
+      // Notify the club president (non-critical — failure doesn't block the request)
+      try {
+        const presidentSnap = await getDocs(
+          query(
+            collection(db, "users"),
+            where("clubId", "==", clubId),
+            where("role",   "==", "president")
+          )
+        );
+        if (!presidentSnap.empty) {
+          await addDoc(collection(db, "notifications"), {
+            userId:    presidentSnap.docs[0].id,
+            title:     "طلب انضمام جديد",
+            message:   `${profile.name ?? "طالب"} يطلب الانضمام إلى ${club?.name ?? "النادي"}`,
+            type:      "join_request",
+            isRead:    false,
+            createdAt: serverTimestamp(),
+          });
+        }
+      } catch {
+        // notification failure must not block the join request
+      }
     } catch {
       setMessage(t.clubPage.joinError);
     } finally {
