@@ -1,14 +1,21 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY ?? "");
-
 export async function POST(request: Request) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    return Response.json(
+      { success: false, message: "GEMINI_API_KEY غير مضبوط" },
+      { status: 500 }
+    );
+  }
+
   try {
-    const body = await request.json() as { club?: string; category?: string };
+    const body = (await request.json()) as { club?: string; category?: string };
     const { club, category } = body;
 
+    const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         temperature: 0.8,

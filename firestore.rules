@@ -53,6 +53,10 @@ service cloud.firestore {
         request.auth.uid == userId
         || isSuperAdmin()
         || isUniversityAdmin(resource.data.universityId)
+        // Club leaders can read their club's members (needed for AI report stats)
+        || (resource.data.clubId != null
+            && resource.data.clubId != ""
+            && isClubLeader(resource.data.clubId))
       );
       allow create: if signedIn()
                     && request.auth.uid == userId
@@ -220,7 +224,8 @@ service cloud.firestore {
         || isVPOf(clubId)
         || isAdmin()
       );
-      allow write: if false;
+      // President/VP cache the AI-generated report here after generation
+      allow write: if isPresidentOf(clubId) || isVPOf(clubId) || isSuperAdmin();
     }
 
     // ─── /supportTickets ─────────────────────────────────────────────────────
