@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, CalendarDays, User, Bell,
   LogOut, Trophy, MessageSquare, Globe,
+  History, Crown, Building2, ShieldCheck,
 } from "lucide-react";
 import { signOut } from "firebase/auth";
 import { useRouter } from "next/navigation";
@@ -14,13 +15,21 @@ import useNotifications from "@/features/notifications/hooks/useNotifications";
 import { useLanguage } from "@/features/i18n/context/LanguageContext";
 
 const NAV_HREFS = [
-  { href: "/dashboard",     key: "home",          icon: LayoutDashboard },
-  { href: "/events",        key: "events",         icon: CalendarDays },
-  { href: "/leaderboard",   key: "leaderboard",    icon: Trophy },
-  { href: "/notifications", key: "notifications",  icon: Bell },
-  { href: "/profile",       key: "profile",        icon: User },
-  { href: "/support",       key: "support",        icon: MessageSquare },
+  { href: "/dashboard",         key: "home",          icon: LayoutDashboard },
+  { href: "/events",            key: "events",         icon: CalendarDays },
+  { href: "/leaderboard",       key: "leaderboard",    icon: Trophy },
+  { href: "/challenge-history", key: "challenges",     icon: History },
+  { href: "/notifications",     key: "notifications",  icon: Bell },
+  { href: "/profile",           key: "profile",        icon: User },
+  { href: "/support",           key: "support",        icon: MessageSquare },
 ] as const;
+
+const ROLE_NAV: Record<string, { href: string; label: string; icon: React.ElementType }> = {
+  president:       { href: "/president",        label: "لوحة النادي",    icon: Crown },
+  vicePresident:   { href: "/president",        label: "لوحة النادي",    icon: Crown },
+  universityAdmin: { href: "/university-admin", label: "لوحة الجامعة",  icon: Building2 },
+  superAdmin:      { href: "/super-admin",      label: "لوحة الإدارة",  icon: ShieldCheck },
+};
 
 export default function Sidebar() {
   const pathname        = usePathname();
@@ -34,9 +43,10 @@ export default function Sidebar() {
     router.push("/login");
   }
 
-  const firstName = profile?.name?.split(" ")[0] ?? "";
-  const roleLabel = t.roles[profile?.role as keyof typeof t.roles] ?? profile?.role ?? "";
-  const initial   = (profile?.name ?? "?")[0];
+  const firstName  = profile?.name?.split(" ")[0] ?? "";
+  const roleLabel  = t.roles[profile?.role as keyof typeof t.roles] ?? profile?.role ?? "";
+  const initial    = (profile?.name ?? "?")[0];
+  const roleLink   = profile?.role ? ROLE_NAV[profile.role] ?? null : null;
 
   return (
     <aside
@@ -60,10 +70,10 @@ export default function Sidebar() {
       </div>
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 py-5 space-y-1">
+      <nav className="flex-1 px-3 py-5 space-y-1 overflow-y-auto">
         {NAV_HREFS.map(({ href, key, icon: Icon }) => {
           const active = pathname === href;
-          const label  = t.nav[key];
+          const label  = t.nav[key as keyof typeof t.nav] ?? key;
           return (
             <Link
               key={href}
@@ -91,6 +101,31 @@ export default function Sidebar() {
             </Link>
           );
         })}
+
+        {/* Role-based link — shown only for president/VP/admin */}
+        {roleLink && (() => {
+          const RoleIcon = roleLink.icon;
+          const active = pathname === roleLink.href;
+          return (
+            <>
+              <div className="mx-4 my-2 border-t border-gray-100" />
+              <Link
+                href={roleLink.href}
+                className={`
+                  flex items-center gap-3 px-4 py-2.5 rounded-2xl text-sm font-bold transition-all
+                  ${active
+                    ? "bg-[#21166A] text-white"
+                    : "text-[#7C3AED] bg-[#F7F5FF] hover:bg-[#EFE8F7]"
+                  }
+                `}
+              >
+                <RoleIcon size={18} className="shrink-0" />
+                <span className="flex-1">{roleLink.label}</span>
+                {active && <div className="w-1.5 h-1.5 rounded-full bg-white shrink-0" />}
+              </Link>
+            </>
+          );
+        })()}
       </nav>
 
       {/* User card + Logout */}

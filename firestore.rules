@@ -81,7 +81,7 @@ service cloud.firestore {
     // ─── /clubs ──────────────────────────────────────────────────────────────
 
     match /clubs/{clubId} {
-      allow read: if sameUniversity(resource.data.universityId);
+      allow read: if sameUniversity(resource.data.universityId) || isSuperAdmin();
       allow create: if isUniversityAdmin(request.resource.data.universityId);
       allow update: if isUniversityAdmin(resource.data.universityId)
                     || isClubLeader(clubId)
